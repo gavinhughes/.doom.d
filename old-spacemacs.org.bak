@@ -1,0 +1,322 @@
+* Experimental
+** Combining macron for Latin letters
+
+https://stackoverflow.com/a/46268816/173162
+#+begin_src emacs-lisp :tangle user-config.el
+
+(defun org-insert-clipboard-image (&optional file)
+  (interactive "F")
+  (shell-command (concat "pngpaste " file))
+  (insert (concat "[[" file "]]"))
+  (org-display-inline-images))
+
+(defun my-org-screenshot ()
+  "Take a screenshot into a time stamped unique-named file in the
+same directory as the org-buffer and insert a link to this file."
+  (interactive)
+  (org-display-inline-images)
+  (setq filename
+        (concat
+         (make-temp-name
+          (concat (file-name-nondirectory (buffer-file-name))
+                  "_imgs/"
+                  (format-time-string "%Y%m%d_%H%M%S_")) ) ".png"))
+  (unless (file-exists-p (file-name-directory filename))
+    (make-directory (file-name-directory filename)))
+  ; take screenshot
+  (if (eq system-type 'darwin)
+      (call-process "screencapture" nil nil nil "-i" filename))
+  (if (eq system-type 'gnu/linux)
+      (call-process "import" nil nil nil filename))
+  ; insert into file if correctly taken
+  (if (file-exists-p filename)
+    (insert (concat "[[file:" filename "]]"))))
+
+(defun org-insert-clipboard (&optional caption)
+  (interactive "P")
+  (let* ((image-dir
+      (if (not (buffer-file-name))
+          (let ((buffer-name (replace-regexp-in-string "CAPTURE-[0-9-]*" "" (buffer-name))))
+        (concat (file-name-directory (buffer-file-name (get-file-buffer buffer-name))) "images"))
+        "images")))
+    (unless (file-exists-p image-dir)
+      (make-directory image-dir))
+    (let* ((image-file (concat image-dir "/" (format-time-string "%Y%m%d_%H%M%S") ".png"))
+       (exit-status 
+        (call-process"convert" nil nil nil 
+             "clipboard:" image-file)))
+      (if caption
+      (insert (format "#+CAPTION: %s label:fig:%s\n" (read-input "Caption: ") (read-input "label: "))))
+      (org-insert-link nil (concat"file:"image-file) "")
+      (org-display-inline-images))))
+
+(bind-key "C-S-y" 'org-insert-clipboard)
+
+#+end_src
+
+* Packages
+
+** Misc
+
+#+Name: use-package
+#+begin_src emacs-lisp :tangle user-config.el
+
+;; Racket
+(setq racket-program "/usr/local/bin/racket")
+
+;; (use-package browse-kill-ring
+;;   :ensure t)
+
+;; (use-package dired-ranger
+;;   ;; :bind (:map dired-mode-map
+;;               ("W" . dired-ranger-copy)
+;;               ("X" . dired-ranger-move)
+;;               ("Y" . dired-ranger-paste)))
+
+;; (use-package elixir-mode
+;;     :ensure t
+;;     :bind (:map elixir-mode-map
+;;                 ("C-c C-f" . elixir-format)))
+
+(use-package evil-surround
+  :ensure t
+  :config
+  (global-evil-surround-mode 1))
+
+;; (use-package magithub
+;;   :after magit
+;;   :config (magithub-feature-autoinject t))
+
+;; (use-package yasnippet
+;;   :ensure t
+;;   :hook ((prog-mode . yas-minor-mode)
+;;           (conf-mode . yas-minor-mode)
+;;           (text-mode . yas-minor-mode)
+;;           (snippet-mode . yas-minor-mode)))
+
+;; (use-package yasnippet-snippets
+;;   :ensure t
+;;   :after (yasnippet))
+
+#+end_src
+
+#+begin_src emacs-lisp :tangle user-config.el
+
+   dotspacemacs-additional-packages
+   '(
+     ;; For theme's per buffer:
+     ;; load-theme-buffer-local
+     ;; org-web-tools
+     ;; browse-kill-ring
+     ;; evil-surround
+     magithub
+     general
+     ;; ess
+     ;; ess-smart-equals
+     ;; ess-smart-underscore
+     ;; org-recur
+     frog-jump-buffer
+     solarized-theme
+     linum-relative
+     )
+
+(general-create-definer my-leader-def
+;; Mapping to this leader are accomplished with:
+;; (my-leader-def ...)
+:prefix "SPC")
+
+#+end_src
+
+** yasnippet
+
+Hooked into specific modes. For global, remove modes config and add ~(yas-global-mode 1)~ to use-package :config.
+
+#+begin_src emacs-lisp :tangle user-config.el
+
+  ;; ;; TODO: Why doesn't ~concat~ work here?
+  ;; ;; (setq yas-snippet-dirs '((concat dotspacemacs-directory "snippets")))
+  ;; (setq yas-snippet-dirs '("/Users/gavinhughes/.spacemacs.d/snippets"))
+
+  ;; ;; Use in these modes.
+  ;; (yas-reload-all)
+  ;; (add-hook 'org-mode-hook #'yas-minor-mode)
+  ;; (add-hook 'prog-mode-hook #'yas-minor-mode) 
+
+#+end_src
+
+** frog-jump-buffer
+#+begin_src emacs-lisp :tangle user-config.el
+(general-define-key "s-i" 'frog-jump-buffer)
+#+end_src
+
+** Ivy
+#+begin_src emacs-lisp :tangle user-config.el
+
+;; Fuzzy matching.
+(setq ivy-re-builders-alist
+      '((swiper . ivy--regex-plus)
+        (t      . ivy--regex-fuzzy)))
+
+#+end_src
+
+** Org mode
+
+#+begin_src 
+
+(org-babel-do-load-languages
+'org-babel-load-languages
+'((emacs-lisp . t)
+  (haskell . t)))
+
+;; Turn off code execution prompts
+(setq org-confirm-babel-evaluate nil)
+
+(add-hook 'org-mode-hook (lambda () 
+  (define-key org-mode-map (kbd "C-c g") 'org-mac-grab-link)))
+
+#+end_src
+
+*** Functions
+#+begin_src emacs-lisp :tangle user-config.el
+
+(defun org-hide-src-block-delimiters()
+(interactive)
+(save-excursion (goto-char (point-max))
+    (while (re-search-backward "#\\+BEGIN_SRC\\|#\\+END_SRC" nil t)
+        (let ((ov (make-overlay (line-beginning-position)
+            (1+ (line-end-position)))))
+        (overlay-put ov 'invisible t)))))
+
+#+end_src
+
+*** Appearance
+#+begin_src emacs-lisp :tangle user-config.el
+
+(add-hook 'org-mode-hook '(lambda ()
+                            (visual-line-mode)
+                            (org-indent-mode)
+
+                            ;; Syntax highlighthing in code blocks.
+                            (setq org-src-fontify-natively t)
+
+                            ;; Preserve whitespace.
+                            (setq org-edit-src-content-indentation 0)
+                            (setq org-src-tab-acts-natively t)
+                            (setq org-src-preserve-indentation t)))
+
+;; In lists, use letters in addition to bullets and numbers
+(setq org-list-allow-alphabetical t)
+
+;; http://www.howardism.org/Technical/Emacs/orgmode-wordprocessor.html
+(setq org-hide-emphasis-markers t)
+
+(require 'org)
+;; bigger latex fragment
+(plist-put org-format-latex-options :scale 1.5)
+
+#+end_src
+
+*** Images
+#+begin_src emacs-lisp :tangle user-config.el
+
+(require 'org-download)
+
+;; Drag-and-drop to `dired`
+(add-hook 'dired-mode-hook 'org-download-enable)
+
+#+end_src
+
+* Language specific
+** Haskell
+*** Config
+
+#+begin_src emacs-lisp :tangle user-config.el
+;; [TODO] Better implementation of this is in ess-mode. Steal it.
+(general-evil-define-key 'insert haskell-mode-map
+  "s-i"   "<SPC>-> <SPC>"
+  "M-s-^" "<SPC>=> <SPC>"
+  ;; [TODO] append space.
+  "s-["   "<SPC><-"
+  "M-s-“" "<SPC><=")
+#+end_src
+
+#+begin_src 
+;; Setup Haskell code eval
+(setq haskell-process-type 'ghci)
+((org-babel-do-load-languages
+    'org-babel-load-languages
+      '((haskell . t)))
+
+#+end_src
+
+* Efficient Input
+
+** Key bindings
+#+begin_src emacs-lisp :tangle user-config.el
+
+;; NO LEADER 
+
+(general-define-key
+  :keymaps 'normal
+  "s-." 'kmacro-end-and-call-macro
+
+  :keymaps 'insert
+  ;; TODO c-o still duplicates this command. It's available for reassignment.
+  "s-;" 'evil-execute-in-normal-state
+)
+
+;; (general-define-key
+;;   :states '(normal insert)
+;;   :keymaps 'org-mode
+;;   ;; "s-<return>" 'org-insert-heading-after-current
+;;   "s-<return>" "<esc>o"
+;; )
+
+;; LEADER
+
+(my-leader-def
+;; Everywhere
+  :keymaps 'normal
+  "o"   'counsel-org-goto
+)
+
+#+end_src
+
+* Sensitive data
+
+WIP
+
+Keeping sensitive data out of public repos.
+
+Source: http://anirudhsasikumar.net/blog/2005.01.21.html
+Info to apply automatically per file type or per file:
+https://stackoverflow.com/questions/151945/how-do-i-control-how-emacs-makes-backup-files
+
+#+begin_src emacs-lisp :tangle user-config.el
+(define-minor-mode sensitive-minor-mode
+  "For sensitive files like password lists.
+    It disables backup creation and auto saving.
+
+    With no argument, this command toggles the mode.
+    Non-null prefix argument turns on the mode.
+    Null prefix argument turns off the mode."
+  ;; The initial value.
+  nil
+  ;; The indicator for the mode line.
+  " Sensitive"
+  ;; The minor mode bindings.
+  nil
+  (if (symbol-value sensitive-mode)
+      (progn
+        ;; disable backups
+        (set (make-local-variable 'backup-inhibited) t)	
+        ;; disable auto-save
+        (if auto-save-default
+            (auto-save-mode -1)))
+                                      ;resort to default value of backup-inhibited
+    (kill-local-variable 'backup-inhibited)
+                                      ;resort to default auto save setting
+    (if auto-save-default
+        (auto-save-mode 1))))
+#+end_src
+
