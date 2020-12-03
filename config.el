@@ -7,10 +7,7 @@
   doom-big-font (font-spec :family "DejaVu Sans Mono" :size 30) ;; For presentations/streaming
   doom-variable-pitch-font (font-spec :family "DejaVu Serif" :size 16)
   doom-serif-font (font-spec :family "DejaVu Serif")
-
-  ;; Org mode
-  org-directory "~/Dropbox/OrgNotes/"
-  org-ellipsis " ▼ "
+  doom-scratch-initial-major-mode 'org-mode
 
   undo-limit 80000000                         ; Raise undo-limit to 80Mb
   evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
@@ -26,13 +23,16 @@
   esup-depth 0
   )
 
+(setq
+  org-directory "~/Dropbox/OrgNotes/"
+  org-ellipsis " ▼ "
+)
 (after! org
   (+company/toggle-auto-completion)
   (disable-flyspell)
   (load! "my/checkboxes")
   (setq
   org-hide-emphasis-markers t
-  display-line-numbers nil
   org-todo-keywords '(
   (sequence
    "TODO(t)"
@@ -45,10 +45,11 @@
    "|"
    "[X](D)")))
   )
-;; Setting this anywhere in config.el cause org-todo-keywords to
-;; be set to nil.
-;; (setq initial-major-mode 'org-mode)             ; Start scratch buffer in org mode.
 
+(setq doom-scratch-initial-major-mode 'org-mode)  ; Start scratch buffer in org mode.
+
+;; Start new buffers in org-mode
+(map! :leader "b N" (cmd! (switch-to-buffer "*new*") (org-mode)))
 
 ;;   (map! :map org-mode "M-S-s-<return>" #'org-insert-subheading-line-below)
 
