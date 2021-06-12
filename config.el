@@ -19,6 +19,7 @@
   truncate-string-ellipsis "…"                ; Unicode ellispis are nicer than "...", and also save /precious/ space
   global-visual-line-mode t                   ; Visual line navigation everywhere.
   ispell-program-name "hunspell"
+  display-line-numbers-type 'visual
 
   ;; https://github.com/jschaf/esup/issues/54
   ;; work around a bug where esup tries to step into the byte-compiled
@@ -183,11 +184,25 @@
                 ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
                 ("account" "%(binary) -f %(ledger-file) reg %(account)")))))
 
-;; ;; (use-package org-download
-;; ;;   :after org
-;; ;;   :bind
-;; ;;   (:map org-mode-map
-;; ;;     (("s-Y" . org-download-screenshot)
-;; ;;      ("s-y" . org-download-yank))))
-;; ;; (setq org-download-screenshot-method "convert clipboard: %s")
-;; ;; (setq org-download-method '+org/org-download-method)
+;; Pasting images in org
+;; https://zzamboni.org/post/my-doom-emacs-configuration-with-commentary/
+(defun zz/org-download-paste-clipboard (&optional use-default-filename)
+  (interactive "P")
+  (require 'org-download)
+  (let ((file
+         (if (not use-default-filename)
+             (read-string (format "Filename [%s]: "
+                                  org-download-screenshot-basename)
+                          nil nil org-download-screenshot-basename)
+           nil)))
+    (org-download-clipboard file)))
+
+(after! org
+  (setq org-download-method 'directory)
+  (setq org-download-image-dir "images")
+  (setq org-download-heading-lvl nil)
+  (setq org-download-timestamp "%Y%m%d-%H%M%S_")
+  (setq org-image-actual-width 300)
+  (map! :map org-mode-map
+        "C-c l a y" #'zz/org-download-paste-clipboard
+        "C-M-y" #'zz/org-download-paste-clipboard))
