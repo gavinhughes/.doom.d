@@ -61,23 +61,33 @@
          ((agenda "" ((org-agenda-span 1)
         	      (org-agenda-overriding-header "Today's Tasks"))))))
   org-todo-keywords
-      '((sequence
-        "TODO(t)"
-        "WIP(w)"
-        "|"
-        "DONE(d!)"
-        "CANCELLED(c!)")
-        (sequence
-        "[ ](T)"
-        "|"
-        "[X](D)"))
+  '(
+    (sequence
+     "[ ](j)"
+     "|"
+     "[X](J)"
+     )
+    (sequence
+     "TODO(k)"
+     "|"
+     "DONE(K!)"
+     "CANCELLED(L!)"
+    )
+    (sequence
+     "WIP(i!)"
+     "PENDING(p!)"
+     "|"
+     )
+    )
   org-todo-keyword-faces
       '(
-        ("TODO" :foreground "goldenrod4" :weight bold)
-        ("WIP" :foreground "blue" :weight bold)
-        ("DONE" :foreground "forest green" :weight bold)
-        ("WAIT" :foreground "orange" :weight bold)
-        ("CANCELLED" :foreground "forest green" :weight bold))
+        ("TODO" :foreground "dim grey" :weight bold)
+        ("WIP" :foreground "dim grey" :weight bold)
+        ("DONE" :foreground "grey25" :weight bold)
+        ("PENDING" :foreground "dim grey" :weight bold)
+        ("[ ]" :foreground "dim grey")
+        ("[X]" :foreground "grey25")
+        ("CANCELLED" :foreground "grey25" :weight bold))
 )
 (after! org
   ;;  (spell-fu-mode-disable)
@@ -94,6 +104,7 @@
    "M-<right>" 'forward-word
    "M-s-<return>" 'org-insert-subheading
    "M-S-s-<return>" (cmd! (+org/insert-item-above 1) (org-cycle))
+   "s-j" 'org-todo
 )
 
 ;; Start new buffers in org-mode.
