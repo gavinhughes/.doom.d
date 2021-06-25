@@ -15,6 +15,7 @@
 (package! osx-dictionary)
 (package! visual-fill-column)
 (package! dired+) ;; To reuse the same buffer when navigating the dir tree
+(package! lorem-ipsum)
 
 ;; http://pragmaticemacs.com/emacs/dynamically-filter-directory-listing-with-dired-narrow/
 (package! dired-narrow)
