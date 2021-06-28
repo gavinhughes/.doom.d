@@ -1,0 +1,14 @@
+# -*- mode: snippet -*-
+# name: Character
+# uuid:
+# key: char
+# condition: t
+# --
+** $1
+   $2
+- Gender :: $3
+- Age :: $4
+- Likes/Intrests :: $5
+- Conflicts :: $6
+
+$0

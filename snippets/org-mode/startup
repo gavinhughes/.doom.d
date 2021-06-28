@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name:  org-startup
+# uuid:
+# key: start
+# condition: t
+# --
+#+STARTUP:      ${2:overview}
+
+$0

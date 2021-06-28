@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name:  org-title
+# uuid:
+# key: title
+# condition: t
+# --
+#+TITLE:        $1
+#+STARTUP:      ${2:overview}
+
+$0

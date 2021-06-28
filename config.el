@@ -1,14 +1,26 @@
 ;;; config.el -*- lexical-binding: t; -*-
 
+;; When you're changing this, work on a branch.
+;;
 ;; Set manually because not captured from shell.
 ;; exec-path-from-shell doesn't work.
 ;; Where does exec-path get value from if not shell $PATH??
 (add-to-list 'exec-path "/opt/homebrew/bin")
 (add-to-list 'exec-path "/opt/homebrew/sbin")
 
+;; Does a built-in function already exist?
+(defun load-directory! (dir)
+  (let ((loadf (lambda (f)
+    (load! (concat dir "/" f)))))
+    (mapc loadf (directory-files dir nil "\\.el$"))
+    )
+  )
+
+;; (load-directory! "my/global")
+
 (setq
   shell-file-name "/opt/homebrew/bin/fish"
-  mac-right-command-modifier 'hyper  ;; We have hyper!
+  mac-right-command-modifier 'hyper  ;; Gentlemen, we have hyper.
   trash-directory "~/.Trash"
 
   user-full-name "Gavin Hughes"
@@ -41,6 +53,9 @@
   esup-depth 0
   )
 
+;; If set to ‘nil’, the major mode is taken from the previously current buffer.
+(setq-default major-mode 'org-mode)
+
 ; Don't spread text across the entire screen.
 (add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
 (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust)
@@ -53,57 +68,58 @@
 ;; Maximize frame at startup.
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
-(load! "my/functions")
-
 (map!
- ;; Unavailable chords already captured by OS:
- ;; C-M-<return>    Magnet maximize window
- ;; C-M-<space>     Things quick capture
-
+ ;; Chords owned by MacOS:
+ ;;   C-M-<return>    Magnet maximize window
+ ;;   C-M-<space>     Things quick capture
 
  :ni "s-<return>" (cmd! (message "Use <H-return>"))
 
  "M-s-SPC" 'org-capture
 
- ;; Movements
- :n "j" 'evil-next-visual-line
- :n "k" 'evil-previous-visual-line
+ ;; Movement
+ :n "j"                  'evil-next-visual-line
+ :n "k"                  'evil-previous-visual-line
+    "M-<left>"           'backward-word
+    "M-<right>"          'forward-word
+    "H-<return>"         '+default/newline-below
+    "s-\\"               'avy-goto-char
+ :i "s-l" "<escape>la" ;; Step over single chars without leaving insert mode
+ :i "s-h" "<escape>ha"
 
- ;; Tiny        navigation in insert mode.
- :i "M-l" "<escape>la"
- :i "M-h" "<escape>ha"
- :i "M-j" "<escape>ja"
- :i "M-k" "<escape>ka"
-
- ;; Character access
+ ;; Special characters
  :i "M--" "–" ;; m-dash. Consistent with Mac.
 
- ;; Fast workspace jumps
- :i "s-1" '+workspace/switch-to-0
- :i "s-2" '+workspace/switch-to-1
- :i "s-3" '+workspace/switch-to-2
- :i "s-4" '+workspace/switch-to-3
- ;; Default new buffers to org-mode
- "s-n"          (cmd! (switch-to-buffer "*new*") (org-mode))
-
- ;; Remapped since it conflicts with org-mode insert-item-below muscle memory
- "H-<return>"     '+default/newline-below
-
+ ;; Buffers
+ "s-n"            (cmd! (evil-buffer-new 1 nil))
+ "s-k"            'kill-current-buffer
+ "M-s-k"          'kill-buffer-and-window
+ "s-,"            'ivy-switch-buffer
  "M-s-]"          'next-buffer
  "M-s-["          'previous-buffer
+ "C-c c"          'clone-indirect-buffer
+ "s-p"            'gh/ps-print-buffer-with-confirmation
+
+ ;; Windows
  "s-'"            'evil-window-next
  "s-\""           'evil-window-prev
- "C-c c"          'clone-indirect-buffer
- "s-\\"           'avy-goto-char
  "C-S-M-<return>" 'toggle-frame-fullscreen
  ;; Doesn't work in emacs-mac. All frames are maximized.
  ;; "C-M-<return>" 'toggle-frame-maximized
 
- "s-k"           'kill-current-buffer
- "M-<left>"      'backward-word
- "M-<right>"     'forward-word
+ ;; Other
+ :ni "s-O"       'evil-open-above
+     "s-<up>"    '+evil/insert-newline-above
+     "s-<down>"  '+evil/insert-newline-below
 
- :leader "b N"   (cmd! (switch-to-buffer "*new*") (org-mode))
+ ;; Add :n to override assignment in +workspaces
+ :ng "s-9"        (cmd! (find-file "~/Desktop/queue.log"))
+
+ ;; Undefine unused or reassigned chords
+ :n "O"          'undefined ;; evil-open-above
+
+ ;; Leaders – place last, otherwise errors.
+ :leader "f m"   'doom/move-this-file
  :leader "b n"   'rename-buffer
  :leader "j d"   'dired-jump
  :leader "v f"   'visual-fill-column-mode  ;; toggle
@@ -112,38 +128,37 @@
  :leader "SPC"   'org-roam-find-file
  :leader "n SPC" 'org-roam-dailies-find-today
 
-  ;; Undefine. Either not in use or reassigned
-  :leader "X"    (cmd! (message "Undefined"))
+ ;; Undefine unused or reassigned chords
+ :leader "X"     'undefined
+ :leader "b N"   'undefined
 )
 
-(map! :map (elixir-mode-map haskell-mode-map)
+(map! :map haskell-mode-map
+ :i "M-s-;" (cmd! (insert "-> "))
+ :i "M-s-:" (cmd! (insert "<- "))
+ )
+
+(map! :map elixir-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
  :i "M-s-:" (cmd! (insert "<- "))
  :i "M-s-." (cmd! (insert "|> "))
-)
+ )
 
 (after! org-roam
         :config
         (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
+
 (setq org-roam-directory "~/Dropbox/OrgNotes/Roam"
       +org-roam-open-buffer-on-find-file nil
+      org-roam-capture-templates '(("d" "default" plain #'org-roam-capture--get-point "%?"
+                                    :file-name "%<%Y%m%d%H%M%S>-${slug}"
+                                    ;; values at column 12
+                                    :head "#+title:    ${title}\n#+startup:  overview\ntags:       "
+                                    :unnarrowed t))
 )
 
 
 ;; ORG-MODE
-
-;; Pasting images in org
-;; https://zzamboni.org/post/my-doom-emacs-configuration-with-commentary/
-(defun zz/org-download-paste-clipboard (&optional use-default-filename)
-  (interactive "P")
-  (require 'org-download)
-  (let ((file
-         (if (not use-default-filename)
-             (read-string (format "Filename [%s]: "
-                                  org-download-screenshot-basename)
-                          nil nil org-download-screenshot-basename)
-           nil)))
-    (org-download-clipboard file)))
 
 (setq
   org-directory "~/Dropbox/OrgNotes/"
@@ -168,24 +183,20 @@
 )
 
 (after! org
-  (setq org-download-method 'directory)
-  (setq org-download-image-dir "images")
-  (setq org-download-heading-lvl nil)
-  (setq org-download-timestamp "%Y%m%d-%H%M%S_")
-  (setq org-image-actual-width 300)
-  (map! :map org-mode-map
-        "C-c l a y" #'zz/org-download-paste-clipboard
-        "C-M-y" #'zz/org-download-paste-clipboard))
-
-
+  ;; (load-directory! "my/org-mode")
   ;;  (spell-fu-mode-disable)
   (vi-tilde-fringe-mode -1)
-  (load! "my/checkboxes")
 
   (setq
+    org-download-method 'directory
+    org-download-image-dir "images"
+    org-download-heading-lvl nil
+    org-download-timestamp "%Y%m%d-%H%M%S_"
+    org-image-actual-width 300
         company-idle-delay nil ;; no autocompletion
         org-hide-emphasis-markers t
         spell-fu-mode nil
+
         org-todo-keywords
         '(
           (sequence
@@ -216,16 +227,27 @@
                 ("[ ]" :foreground "dim grey")
                 ("[X]" :foreground "grey25")
                 ("CANCELLED" :foreground "grey25" :weight bold))
-)
+))
+
 
 (map! :map org-mode-map
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
   :ni "M-S-s-<return>"     (cmd! (+org/insert-item-above 1))
   :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
+  ;; Insert a heading while currently working a bullet list
+  :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1) (+org/insert-item-below 1))
 
+  "s-r"                'org-roam
+  "s-i"                'org-roam-insert
+  "s-I"                'org-roam-insert-immediate
   "s-j"                'org-todo
   "H-n"                'org-next-visible-heading
   "H-p"                'org-previous-visible-heading
+
+  ;; Choose one or the other
+  "C-c l a y"          #'zz/org-download-paste-clipboard
+  "C-M-y"              #'zz/org-download-paste-clipboard
+
 )
 
 
@@ -236,7 +258,7 @@
 
 ;; EWW
 (after! eww
-  (load! "my/eww")
+  ;; (load-directory! "my/eww-mode")
   ;; This has global effect.  How to limit to just eww mode?
   ;; (visual-fill-column-mode t)
   (map! :map eww-mode-map
@@ -256,3 +278,15 @@
                 ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
                 ("account" "%(binary) -f %(ledger-file) reg %(account)")))))
 
+;; Pasting images in org
+;; https://zzamboni.org/post/my-doom-emacs-configuration-with-commentary/
+(defun zz/org-download-paste-clipboard (&optional use-default-filename)
+  (interactive "P")
+  (require 'org-download)
+  (let ((file
+         (if (not use-default-filename)
+             (read-string (format "Filename [%s]: "
+                                  org-download-screenshot-basename)
+                          nil nil org-download-screenshot-basename)
+           nil)))
+    (org-download-clipboard file)))
