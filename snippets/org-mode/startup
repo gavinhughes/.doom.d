@@ -4,6 +4,6 @@
 # key: start
 # condition: t
 # --
-#+STARTUP:      ${2:overview}
+#+STARTUP:         ${2:overview}
 
 $0

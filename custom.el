@@ -9,9 +9,15 @@
    ["#002b36" "#ff6c6b" "#98be65" "#ECBE7B" "#51afef" "#c678dd" "#46D9FF" "#bbc2cf"])
  '(blink-cursor-mode nil)
  '(custom-safe-themes
-   '("9b01a258b57067426cc3c8155330b0381ae0d8dd41d5345b5eddac69f40d409b" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" default))
+   '("246a9596178bb806c5f41e5b571546bb6e0f4bd41a9da0df5dfbca7ec6e2250c" "835868dcd17131ba8b9619d14c67c127aa18b90a82438c8613586331129dda63" "cebda623e3f9ecd4a4af08d92c406bc4517e323d9259d5156f43901860224e30" "63bfcabeb44559c67d8827dc68cd6c4a6d3ce35ef4504343af12d42f24894e00" "9b01a258b57067426cc3c8155330b0381ae0d8dd41d5345b5eddac69f40d409b" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" default))
  '(elfeed-feeds '("https://www.joelonsoftware.com"))
+ '(exwm-floating-border-color "#191b20")
  '(fci-rule-color "#5B6268")
+ '(highlight-tail-colors
+   ((("#333a38" "#99bb66" "green")
+     . 0)
+    (("#2b3d48" "#46D9FF" "brightcyan")
+     . 20)))
  '(jdee-db-active-breakpoint-face-colors (cons "#1B2229" "#51afef"))
  '(jdee-db-requested-breakpoint-face-colors (cons "#1B2229" "#98be65"))
  '(jdee-db-spec-breakpoint-face-colors (cons "#1B2229" "#3f444a"))

@@ -1,10 +1,9 @@
 ;;; config.el -*- lexical-binding: t; -*-
 
 ;; When you're changing this, work on a branch.
-;;
-;; Set manually because not captured from shell.
-;; exec-path-from-shell doesn't work.
-;; Where does exec-path get value from if not shell $PATH??
+
+;; Load MacOS path
+;; (exec-path-from-shell-initialize)
 (add-to-list 'exec-path "/opt/homebrew/bin")
 (add-to-list 'exec-path "/opt/homebrew/sbin")
 
@@ -16,11 +15,17 @@
     )
   )
 
+(load! "my/global/functions.el")
 ;; (load-directory! "my/global")
+
+;; Use word wrap in all buffers that minor mode message-mode.
+;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
+(remove-hook 'text-mode-hook #'auto-fill-mode)
+(add-hook 'message-mode-hook #'word-wrap-mode)
 
 (setq
   shell-file-name "/opt/homebrew/bin/fish"
-  mac-right-command-modifier 'hyper  ;; Gentlemen, we have hyper.
+  mac-right-command-modifier 'hyper
   trash-directory "~/.Trash"
 
   user-full-name "Gavin Hughes"
@@ -53,6 +58,11 @@
   esup-depth 0
   )
 
+;; Might be better to set this .projectile.
+;; Not working.  Why?
+;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
+(add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
+
 ;; If set to ‘nil’, the major mode is taken from the previously current buffer.
 (setq-default major-mode 'org-mode)
 
@@ -73,7 +83,7 @@
  ;;   C-M-<return>    Magnet maximize window
  ;;   C-M-<space>     Things quick capture
 
- :ni "s-<return>" (cmd! (message "Use <H-return>"))
+ ;; :ni "s-<return>" (cmd! (message "Use <H-return>"))
 
  "M-s-SPC" 'org-capture
 
@@ -86,6 +96,7 @@
     "s-\\"               'avy-goto-char
  :i "s-l" "<escape>la" ;; Step over single chars without leaving insert mode
  :i "s-h" "<escape>ha"
+ :i "s-S" "<escape>0i"
 
  ;; Special characters
  :i "M--" "–" ;; m-dash. Consistent with Mac.
@@ -98,7 +109,7 @@
  "M-s-]"          'next-buffer
  "M-s-["          'previous-buffer
  "C-c c"          'clone-indirect-buffer
- "s-p"            'gh/ps-print-buffer-with-confirmation
+ "s-p"            'ps-print-buffer-with-confirmation
 
  ;; Windows
  "s-'"            'evil-window-next
@@ -107,16 +118,33 @@
  ;; Doesn't work in emacs-mac. All frames are maximized.
  ;; "C-M-<return>" 'toggle-frame-maximized
 
+
+;; Workspaces.
+;; :n assignment is in the package. Add :i.
+:ni "s-1"        '+workspace/switch-to-0
+:ni "s-2"        '+workspace/switch-to-1
+:ni "s-3"        '+workspace/switch-to-2
+:ni "s-4"        '+workspace/switch-to-3
+
  ;; Other
  :ni "s-O"       'evil-open-above
      "s-<up>"    '+evil/insert-newline-above
      "s-<down>"  '+evil/insert-newline-below
+:niv "C-u"       'universal-argument
+     "H-t"       'toggle-theme
+
+;; Make `$` behave same as in :normal.
+ :v  "$"         (cmd! (evil-end-of-line) (evil-backward-char) (evil-forward-char))
 
  ;; Add :n to override assignment in +workspaces
  :ng "s-9"        (cmd! (find-file "~/Desktop/queue.log"))
+     "H-c"        (cmd! (find-file "/Users/gavinhughes/.doom.d/config.el"))
+     "<f7>"        'org-tags-view
+     "<f9>"        'org-agenda-list
 
  ;; Undefine unused or reassigned chords
  :n "O"          'undefined ;; evil-open-above
+ :ni "C-d"       'undefined ;; evil-scroll-down
 
  ;; Leaders – place last, otherwise errors.
  :leader "f m"   'doom/move-this-file
@@ -126,11 +154,14 @@
  :leader "<"     '+ivy/switch-workspace-buffer
  :leader ","     'ivy-switch-buffer
  :leader "SPC"   'org-roam-find-file
+ :leader "M-SPC" 'org-roam-find-file
  :leader "n SPC" 'org-roam-dailies-find-today
+ :leader "o o"   'reveal-in-osx-finder
 
  ;; Undefine unused or reassigned chords
  :leader "X"     'undefined
  :leader "b N"   'undefined
+ :leader "u"     'undefined ;; Universal argument
 )
 
 (map! :map haskell-mode-map
@@ -143,6 +174,11 @@
  :i "M-s-:" (cmd! (insert "<- "))
  :i "M-s-." (cmd! (insert "|> "))
  )
+
+;; Error on markdown-insert-list-item
+;; (map! :map markdown-mode-map
+;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
+;;       )
 
 (after! org-roam
         :config
@@ -163,10 +199,20 @@
 (setq
   org-directory "~/Dropbox/OrgNotes/"
   org-ellipsis " ▼ "
+  org-cycle-separator-lines 3
+  org-special-ctrl-k t
+  ;; Not working 7/13/21
+  org-ctrl-k-protect-subtree t
   org-blank-before-new-entry '((heading . nil)
                                (plain-list-item . nil))
   ;; https://stackoverflow.com/a/41969519/173162
   org-agenda-files (directory-files-recursively "~/Dropbox/OrgNotes/" "\\.org$")
+  org-agenda-window-setup 'current-window
+  org-agenda-show-future-repeats nil
+  org-agenda-skip-deadline-if-done t
+  org-agenda-skip-scheduled-if-done t
+  org-agenda-skip-timestamp-if-done t
+  org-agenda-start-on-weekday 0
   org-agenda-custom-commands
       '(("d" "Today's Tasks"
          ((agenda "" ((org-agenda-span 1)
@@ -174,13 +220,22 @@
 
   ;; TAGS
   org-use-tag-inheritance nil
+  org-agenda-use-tag-inheritance nil
   org-tag-alist '((:startgrouptag)
                   ("Interaction")
                   (:grouptags)
                   ("ia")
                   ("{ia#.+}")
                   (:endgrouptag))
-)
+
+  ;; Waiting on a better solution:
+  ;; https://www.reddit.com/r/DoomEmacs/comments/ocv27u/how_to_change_latex_preview_color_on_per_theme/
+  org-format-latex-options '(:foreground "MediumPurple" :background default :scale 1.0
+                             :html-foreground "Black" :html-background "Transparent" :html-scale 1.0
+                             :matchers ("$" "$$" "\\(" "\\["))
+
+
+  )
 
 (after! org
   ;; (load-directory! "my/org-mode")
@@ -200,23 +255,26 @@
         org-todo-keywords
         '(
           (sequence
-           "[ ](j)"
+           "[ ](T)"
            "|"
-           "[X](J)"
+           "[X](t)"
            )
           (sequence
-           "TODO(k)"
+           "TODO(K)"
            "|"
-           "DONE(K!)"
-           "CANCELLED(L!)"
+           "DONE(k)"
+           "CANCELLED(l)"
            )
           (sequence
            "WIP(i)"
-           "PENDING(p!)"
-           "PAUSED(u!)"
+           "PENDING(p)"
+           "PAUSED(u)"
            "|"
            )
           )
+        org-priority-faces '((?A . (:foreground "dim grey"))
+                           (?B . (:foreground "dim grey"))
+                           (?C . (:foreground "dim grey")))
         org-todo-keyword-faces
         '(
                 ("TODO" :foreground "dim grey" :weight bold)
@@ -227,8 +285,15 @@
                 ("[ ]" :foreground "dim grey")
                 ("[X]" :foreground "grey25")
                 ("CANCELLED" :foreground "grey25" :weight bold))
-))
+        )
+  )
 
+;; (defun toggle-theme ()
+;;   (setq (doom-theme))
+;;   (if (= doom-theme 'doom-one-light)
+;;       (setq (doom-theme 'doom-one))
+;;     (setq (doom-there)))
+;;   )
 
 (map! :map org-mode-map
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
@@ -240,9 +305,17 @@
   "s-r"                'org-roam
   "s-i"                'org-roam-insert
   "s-I"                'org-roam-insert-immediate
-  "s-j"                'org-todo
+  :niv "s-j"                'org-todo
   "H-n"                'org-next-visible-heading
   "H-p"                'org-previous-visible-heading
+  "H-r"                '+org/refile-to-current-file
+  "H-R"                '+org/refile-to-file
+  "H-a"                'org-archive-subtree
+  "s-."                'org-shiftright
+  "s->"                'org-shiftleft
+  "H-l"                "C-u C-u C-c C-x C-l" ;; Preview all latex
+  "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
+  "s-M"                'org-refile
 
   ;; Choose one or the other
   "C-c l a y"          #'zz/org-download-paste-clipboard
@@ -252,8 +325,8 @@
 
 
 ;; ESS
-(after! inferior-ess-mode
-  map! :n "M-j" "<- "
+(map! :map inferior-ess-mode
+  :n "M-j" "<- "
   )
 
 ;; EWW
@@ -268,7 +341,6 @@
         "M-s-]" 'eww-forward-url)
         ;; "<s-mouse-1>" 'my-eww-open-in-new-window
   )
-
 
 ;; Ledger mode
 (add-hook 'ledger-mode-hook (lambda ()
