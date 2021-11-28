@@ -1,39 +1,41 @@
 ;;; config.el -*- lexical-binding: t; -*-
 
-;; When you're changing this, work on a branch.
+;; Start the Emacs server from this instance so that all emacsclient calls are routed here.
+;; (if (server-running-p ()) nil (server-start))
 
-;; Load MacOS path
-;; (exec-path-from-shell-initialize)
-(add-to-list 'exec-path "/opt/homebrew/bin")
-(add-to-list 'exec-path "/opt/homebrew/sbin")
+;; To reduce the risk of loading outdated byte code files, set load-prefer-newer
+;; and enable auto-compile-on-load-mode as early as possible.
+(auto-compile-on-load-mode)
+(auto-compile-on-save-mode)
+(setq load-prefer-newer t)
 
-;; Does a built-in function already exist?
-(defun load-directory! (dir)
-  (let ((loadf (lambda (f)
-    (load! (concat dir "/" f)))))
-    (mapc loadf (directory-files dir nil "\\.el$"))
-    )
-  )
+
+;; These add load paths but don't load all files in them.
+;; (add-load-path! "my/global")
+;; (add-load-path! "modules")
 
 (load! "my/global/functions.el")
-;; (load-directory! "my/global")
 
 ;; Use word wrap in all buffers that minor mode message-mode.
 ;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
 (remove-hook 'text-mode-hook #'auto-fill-mode)
 (add-hook 'message-mode-hook #'word-wrap-mode)
 
+(add-hook! 'org-mode-hook #'mixed-pitch-mode)
+(setq mixed-pitch-variable-pitch-cursor nil)
+
 (setq
   shell-file-name "/opt/homebrew/bin/fish"
   mac-right-command-modifier 'hyper
   trash-directory "~/.Trash"
+  confirm-kill-emacs nil
+    ;; Disable exit confirmation
 
   user-full-name "Gavin Hughes"
   user-mail-address "gavhug@gmail.com"
 
   doom-font (font-spec :family "DejaVu Sans Mono" :size 16)
-  doom-big-font (font-spec :family "DejaVu Sans Mono" :size 30) ;; For presentations/streaming
-  doom-variable-pitch-font (font-spec :family "DejaVu Sans Mono" :size 16)
+  doom-variable-pitch-font (font-spec :family "DejaVu Serif" :size 18)
   doom-serif-font (font-spec :family "DejaVu Serif")
 
   doom-scratch-initial-major-mode 'org-mode
@@ -44,7 +46,7 @@
   truncate-string-ellipsis "…"                ; Unicode ellispis are nicer than "...", and also save /precious/ space
   global-visual-line-mode t                   ; Visual line navigation everywhere.
 
-  ispell-program-name "hunspell"
+  ;; ispell-program-name "hunspell"
   display-line-numbers-type 'visual
 
   ;; Finder "put back" is not supported. If desired, instructions are here
@@ -58,16 +60,16 @@
   esup-depth 0
   )
 
-;; Might be better to set this .projectile.
-;; Not working.  Why?
-;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
 (add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
-
-;; If set to ‘nil’, the major mode is taken from the previously current buffer.
+  ;; Might be better to set this .projectile.
+  ;; Not working.  Why?
+  ;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
 (setq-default major-mode 'org-mode)
-
-; Don't spread text across the entire screen.
+  ;; If set to ‘nil’, the major mode is taken from the previously current buffer.
+(remove-hook 'text-mode-hook #'spell-fu-mode)
+  ;; Focus on writing, not spelling.
 (add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
+  ;; Don't spread text across the entire screen.
 (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust)
 (setq
   visual-fill-column-fringes-outside-margins nil
@@ -79,24 +81,48 @@
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
 (map!
- ;; Chords owned by MacOS:
+ ;; DON'T USE. Assigned in MacOS:
  ;;   C-M-<return>    Magnet maximize window
  ;;   C-M-<space>     Things quick capture
 
+ ;; Undefine unused or reassigned chords
+ :n  "O"         'undefined ;; evil-open-above
+ :ni "C-d"       'undefined ;; evil-scroll-down
+     "M-d"       'undefined ;; kill-word
+
+;; Hypers – Get there quickly
+;;   This might be better defined in their category locations than references
+;;   with a master list in comments here.
+"H-<return>"  '+default/newline-below
+  ;; todo. write about the reason for this. Has to do with org mode conflict 's-<return>'
  ;; :ni "s-<return>" (cmd! (message "Use <H-return>"))
+"H-a"         (cmd! (find-file "~/Desktop/stack.log"))
+"H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.el"))
+"H-d"         'org-roam-dailies-goto-today
+"H-t"         'toggle-theme
+"H-["         'org-roam-dailies-goto-previous-note
+"H-]"         'org-roam-dailies-goto-next-note
+
 
  "M-s-SPC" 'org-capture
+ "C-M-;"      'yank-from-kill-ring
 
  ;; Movement
+ :n "$"                  'end-of-visual-line
  :n "j"                  'evil-next-visual-line
  :n "k"                  'evil-previous-visual-line
     "M-<left>"           'backward-word
     "M-<right>"          'forward-word
-    "H-<return>"         '+default/newline-below
-    "s-\\"               'avy-goto-char
- :i "s-l" "<escape>la" ;; Step over single chars without leaving insert mode
- :i "s-h" "<escape>ha"
- :i "s-S" "<escape>0i"
+    "M-s-l"              'avy-goto-char
+    "M-s-;"              'avy-goto-char-2
+ :i "s-l" "<escape>la" ;; Step forward over single chars without leaving insert mode
+ :i "s-h" "<escape>ha" ;; Step back over...
+ :i "s-S" "<escape>0i" ;; Jump to col 0. Useful in org mode
+
+ :i "M-o"  'evil-execute-in-normal-state
+
+:ni "M-."                'better-jumper-jump-forward
+:ni "M-,"                'better-jumper-jump-backward
 
  ;; Special characters
  :i "M--" "–" ;; m-dash. Consistent with Mac.
@@ -110,6 +136,8 @@
  "M-s-["          'previous-buffer
  "C-c c"          'clone-indirect-buffer
  "s-p"            'ps-print-buffer-with-confirmation
+ "M-;"            'org-roam-node-find
+ "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
 
  ;; Windows
  "s-'"            'evil-window-next
@@ -117,7 +145,6 @@
  "C-S-M-<return>" 'toggle-frame-fullscreen
  ;; Doesn't work in emacs-mac. All frames are maximized.
  ;; "C-M-<return>" 'toggle-frame-maximized
-
 
 ;; Workspaces.
 ;; :n assignment is in the package. Add :i.
@@ -130,74 +157,55 @@
  :ni "s-O"       'evil-open-above
      "s-<up>"    '+evil/insert-newline-above
      "s-<down>"  '+evil/insert-newline-below
+     "M-<return>" '+evil/insert-newline-below
 :niv "C-u"       'universal-argument
-     "H-t"       'toggle-theme
 
 ;; Make `$` behave same as in :normal.
  :v  "$"         (cmd! (evil-end-of-line) (evil-backward-char) (evil-forward-char))
 
  ;; Add :n to override assignment in +workspaces
- :ng "s-9"        (cmd! (find-file "~/Desktop/queue.log"))
-     "H-c"        (cmd! (find-file "/Users/gavinhughes/.doom.d/config.el"))
      "<f7>"        'org-tags-view
      "<f9>"        'org-agenda-list
-
- ;; Undefine unused or reassigned chords
- :n "O"          'undefined ;; evil-open-above
- :ni "C-d"       'undefined ;; evil-scroll-down
-
- ;; Leaders – place last, otherwise errors.
- :leader "f m"   'doom/move-this-file
- :leader "b n"   'rename-buffer
- :leader "j d"   'dired-jump
- :leader "v f"   'visual-fill-column-mode  ;; toggle
- :leader "<"     '+ivy/switch-workspace-buffer
- :leader ","     'ivy-switch-buffer
- :leader "SPC"   'org-roam-find-file
- :leader "M-SPC" 'org-roam-find-file
- :leader "n SPC" 'org-roam-dailies-find-today
- :leader "o o"   'reveal-in-osx-finder
 
  ;; Undefine unused or reassigned chords
  :leader "X"     'undefined
  :leader "b N"   'undefined
  :leader "u"     'undefined ;; Universal argument
-)
 
-(map! :map haskell-mode-map
- :i "M-s-;" (cmd! (insert "-> "))
- :i "M-s-:" (cmd! (insert "<- "))
+ ;; Leaders – place last, otherwise errors.
+ :leader "a d"   (cmd! (org-insert-time-stamp (current-time) nil 1))
+   ;; Change this to a function: 'org-time-stamp-inactive
+ :leader "f m"   'doom/move-this-file
+ :leader "b n"   'rename-buffer
+ :leader "j d"   'dired-jump
+ :leader "<"     '+ivy/switch-workspace-buffer
+ :leader ","     'ivy-switch-buffer
+ :leader "SPC"   '+ivy/projectile-find-file
+
+ ;; `r` org-roam
+ :leader "r r"     'org-roam-node-find
+ :leader "r b"     'org-roam-buffer-toggle
+
+ ;; `m` Mac OS
+ :leader "m m d"   '+macos/open-in-default-program
+ :leader "m m o"   'reveal-in-osx-finder
+ :leader "m m s"   'org-mac-safari-get-frontmost-url
+ :leader "m m S"   'org-mac-safari-insert-frontmost-url
+
+ ;; `t` Toggle
+ :leader "t v"   'visual-fill-column-mode
  )
-
-(map! :map elixir-mode-map
- :i "M-s-;" (cmd! (insert "-> "))
- :i "M-s-:" (cmd! (insert "<- "))
- :i "M-s-." (cmd! (insert "|> "))
- )
-
-;; Error on markdown-insert-list-item
-;; (map! :map markdown-mode-map
-;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
-;;       )
-
-(after! org-roam
-        :config
-        (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
-
-(setq org-roam-directory "~/Dropbox/OrgNotes/Roam"
-      +org-roam-open-buffer-on-find-file nil
-      org-roam-capture-templates '(("d" "default" plain #'org-roam-capture--get-point "%?"
-                                    :file-name "%<%Y%m%d%H%M%S>-${slug}"
-                                    ;; values at column 12
-                                    :head "#+title:    ${title}\n#+startup:  overview\ntags:       "
-                                    :unnarrowed t))
-)
-
 
 ;; ORG-MODE
 
+;; https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages
+;; Better way to load using packages.el?
+;; (add-load-path! "my/org-mode")
+;; (require 'org-mac-link)
+
 (setq
-  org-directory "~/Dropbox/OrgNotes/"
+  org-directory "~/OrgNotes/"
+  org-attach-id-dir (concat org-directory "attachments/")
   org-ellipsis " ▼ "
   org-cycle-separator-lines 3
   org-special-ctrl-k t
@@ -205,8 +213,8 @@
   org-ctrl-k-protect-subtree t
   org-blank-before-new-entry '((heading . nil)
                                (plain-list-item . nil))
-  ;; https://stackoverflow.com/a/41969519/173162
-  org-agenda-files (directory-files-recursively "~/Dropbox/OrgNotes/" "\\.org$")
+   ;; https://stackoverflow.com/a/41969519/173162
+  org-agenda-files (directory-files-recursively "~/OrgNotes/" "\\.org$")
   org-agenda-window-setup 'current-window
   org-agenda-show-future-repeats nil
   org-agenda-skip-deadline-if-done t
@@ -228,101 +236,219 @@
                   ("{ia#.+}")
                   (:endgrouptag))
 
-  ;; Waiting on a better solution:
-  ;; https://www.reddit.com/r/DoomEmacs/comments/ocv27u/how_to_change_latex_preview_color_on_per_theme/
-  org-format-latex-options '(:foreground "MediumPurple" :background default :scale 1.0
-                             :html-foreground "Black" :html-background "Transparent" :html-scale 1.0
-                             :matchers ("$" "$$" "\\(" "\\["))
+  ;; https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
+  org-preview-latex-default-process 'dvisvgm
+  org-format-latex-options '(:scale 2.0)
+  org-startup-with-inline-images 1
+  org-startup-with-latex-preview 1
+    ;; Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
+ )
+
+(add-hook 'org-mode-hook (lambda ()
+                           (setq
+                            line-spacing 8
+                              ;; Make text easier to read.
+                              )))
 
 
-  )
+;; BROKEN
+;; For export to .md, .doc, etc.
+;; https://github.com/tecosaur/org-pandoc-import
+;; (use-package! org-pandoc-import :after org)
 
+;; https://github.com/abo-abo/org-download/blob/master/org-download.el
+(require 'org-download)
+  ;; org-download is not great. Using the 'attach method, files are
+  ;; inserted in the org-attach-id directory under the file property.
+  ;; Limitations:
+  ;; - Images will not insert unlist under a heading.
 (after! org
-  ;; (load-directory! "my/org-mode")
-  ;;  (spell-fu-mode-disable)
-  (vi-tilde-fringe-mode -1)
-
   (setq
-    org-download-method 'directory
-    org-download-image-dir "images"
-    org-download-heading-lvl nil
+    ;; https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
+    org-download-method 'attach
     org-download-timestamp "%Y%m%d-%H%M%S_"
     org-image-actual-width 300
-        company-idle-delay nil ;; no autocompletion
-        org-hide-emphasis-markers t
-        spell-fu-mode nil
-
-        org-todo-keywords
-        '(
-          (sequence
-           "[ ](T)"
-           "|"
-           "[X](t)"
-           )
-          (sequence
-           "TODO(K)"
-           "|"
-           "DONE(k)"
-           "CANCELLED(l)"
-           )
-          (sequence
-           "WIP(i)"
-           "PENDING(p)"
-           "PAUSED(u)"
-           "|"
-           )
-          )
-        org-priority-faces '((?A . (:foreground "dim grey"))
-                           (?B . (:foreground "dim grey"))
-                           (?C . (:foreground "dim grey")))
-        org-todo-keyword-faces
-        '(
-                ("TODO" :foreground "dim grey" :weight bold)
-                ("WIP" :foreground "dim grey" :weight bold)
-                ("DONE" :foreground "grey25" :weight bold)
-                ("PENDING" :foreground "dim grey" :weight bold)
-                ("PAUSED" :foreground "dim grey" :weight bold)
-                ("[ ]" :foreground "dim grey")
-                ("[X]" :foreground "grey25")
-                ("CANCELLED" :foreground "grey25" :weight bold))
-        )
+    org-download-delete-image-after-download 1
+      ;; Delete temp image after download
+    org-download-screenshot-method "/opt/homebrew/bin/pngpaste %s"
+    org-download-annotate-function #'gh/dont-annotate)
+      ;; Don't insert any property info above the link.
   )
+(defun gh/dont-annotate (link) "")
 
-;; (defun toggle-theme ()
-;;   (setq (doom-theme))
-;;   (if (= doom-theme 'doom-one-light)
-;;       (setq (doom-theme 'doom-one))
-;;     (setq (doom-there)))
-;;   )
+
+(add-hook 'org-mode-hook #'org-appear-mode)
+(after! org
+  ;; (load-directory! "my/org-mode")
+ (vi-tilde-fringe-mode -1)
+ (setq
+    company-idle-delay nil ;; no autocompletion
+    org-hide-emphasis-markers t
+    spell-fu-mode nil
+
+    org-todo-keywords
+    '(
+        (sequence
+        "[ ](j)"
+        "|"
+        "[X](k)"
+        )
+        (sequence
+        "TODO(u)"
+        "|"
+        "DONE(i)"
+        "CANCELLED(l)"
+        )
+        (sequence
+        "WIP(w)"
+        "PENDING(p)"
+        "PAUSED(a)"
+        "|"
+      ))
+org-priority-faces '((?A . (:foreground "dim grey"))
+                        (?B . (:foreground "dim grey"))
+                        (?C . (:foreground "dim grey")))
+org-todo-keyword-faces
+'(
+        ("TODO" :foreground "dim grey" :weight bold)
+        ("WIP" :foreground "dim grey" :weight bold)
+        ("DONE" :foreground "grey25" :weight bold)
+        ("PENDING" :foreground "dim grey" :weight bold)
+        ("PAUSED" :foreground "dim grey" :weight bold)
+        ("[ ]" :foreground "dim grey")
+        ("[X]" :foreground "grey25")
+        ("CANCELLED" :foreground "grey25" :weight bold))
+   ))
 
 (map! :map org-mode-map
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
-  :ni "M-S-s-<return>"     (cmd! (+org/insert-item-above 1))
+  :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
   :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
   ;; Insert a heading while currently working a bullet list
   :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1) (+org/insert-item-below 1))
 
-  "s-r"                'org-roam
-  "s-i"                'org-roam-insert
-  "s-I"                'org-roam-insert-immediate
-  :niv "s-j"                'org-todo
+  ;; Should all Hypers be defined globally?
   "H-n"                'org-next-visible-heading
   "H-p"                'org-previous-visible-heading
   "H-r"                '+org/refile-to-current-file
   "H-R"                '+org/refile-to-file
   "H-a"                'org-archive-subtree
-  "s-."                'org-shiftright
-  "s->"                'org-shiftleft
+  ;; "s-."                'org-shiftright
+  ;; "s->"                'org-shiftleft
   "H-l"                "C-u C-u C-c C-x C-l" ;; Preview all latex
   "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
   "s-M"                'org-refile
+  "C-M-y"              'org-download-screenshot
+  "C-M-S-y"            'org-download-yank
 
-  ;; Choose one or the other
-  "C-c l a y"          #'zz/org-download-paste-clipboard
-  "C-M-y"              #'zz/org-download-paste-clipboard
+  ;; Roam
+  "M-I"                'org-roam-node-insert
+  "s-i"                'org-roam-insert
+  "s-I"                'org-roam-insert-immediate
+  :niv "s-j"           'org-todo
 
 )
 
+(map! :map haskell-mode-map
+ :i "M-s-;" (cmd! (insert "-> "))
+ :i "M-s-:" (cmd! (insert "<- "))
+ )
+
+;; Elixir and Phoenix
+;;
+(map! :map elixir-mode-map
+ :i "M-s-;" (cmd! (insert "-> "))
+ :i "M-s-:" (cmd! (insert "<- "))
+ :i "s-:"   (cmd! (insert "=> "))
+ :i "M-s-." (cmd! (insert "|> "))
+ )
+
+
+(map! :map markdown-mode-map
+    "M--" 'undefine
+ :i "M--" "–" ;; m-dash. Consistent with Mac.
+;; Error on markdown-insert-list-item
+;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
+ )
+
+;; (after! org-roam
+;;         :config
+;;         (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
+
+;; Not working yet. And will probably be in the next release of v2
+;; (defun org-roam-node-insert-immediate (arg &rest args)
+;;   (interactive "p")
+;;   (let ((args (cons arg args))
+;;         (org-roam-capture-templates (list (append (car org-roam-capture-templates)
+;;                                                   '(:immediate-finish t)))))
+;;     (apply #'org-roam-node-insert args)))
+
+(setq org-roam-v2-ack t
+      org-roam-directory "~/OrgNotes/Roam/"
+      org-roam-capture-templates '(("d" "default" plain "%?"
+                                      :target (file+head "${slug}.org"
+                                                         "#+TITLE:   ${title}\n#+STARTUP: show2levels")
+                                      :unnarrowed t))
+      org-roam-dailies-directory "daily/"
+      org-roam-dailies-capture-templates '(("d" "default" entry
+                                            "* %?"
+                                        :target (file+head
+"%<%Y-%m-%d>.org"
+"#+TITLE: %<%Y-%m-%d>
+
+* [[elisp:(org-roam-dailies-goto-yesterday 1)][Yesterday]]
+* [[id:78738d7a-4c44-489f-a262-e75611ca4e8a][Today]]
+* [[id:0ec6b274-4f95-44f1-acd5-5c163478f40a][Contacts]]
+
+* Ponder and Plan
+
+"))))
+
+(use-package! websocket
+    :after org-roam)
+(use-package! org-roam-ui
+    :after org-roam ;; or :after org
+;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+;;         a hookable mode anymore, you're advised to pick something yourself
+;;         if you don't care about startup time, use
+;;  :hook (after-init . org-roam-ui-mode)
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+
+;; https://github.com/org-roam/org-roam/wiki/Hitchhiker's-Rough-Guide-to-Org-roam-V2#showing-the-number-of-backlinks-for-each-node-in-org-roam-node-find
+;; (cl-defmethod org-roam-node-directories ((node org-roam-node))
+;;   (if-let ((dirs (file-name-directory (file-relative-name (org-roam-node-file node) org-roam-directory))))
+;;       (format "(%s)" (car (f-split dirs)))
+;;     ""))
+
+;; (cl-defmethod org-roam-node-backlinkscount ((node org-roam-node))
+;;   (let* ((count (caar (org-roam-db-query
+;;                        [:select (funcall count source)
+;;                                 :from links
+;;                                 :where (= dest $s1)
+;;                                 :and (= type "id")]
+;;                        (org-roam-node-id node)))))
+;;     (format "[%d]" count)))
+
+;; (setq org-roam-node-display-template "${directories:10} ${tags:10} ${title:100} ${backlinkscount:6}")
+
+;; ;; org-roam buffer
+;; (setq org-roam-mode-section-functions
+;;       (list ;; #'org-roam-backlinks-section
+;;             ;; #'org-roam-reflinks-section
+;;             ;; #'org-roam-unlinked-references-section
+;;             ))
+;; (add-to-list 'display-buffer-alist
+;;              '("\\*org-roam\\*"
+;;                (display-buffer-in-side-window)
+;;                (side . right)
+;;                (slot . 0)
+;;                (window-width . 0.33)
+;;                (window-parameters . ((no-other-window . t)
+;;                                      (no-delete-other-windows . t)))))
 
 ;; ESS
 (map! :map inferior-ess-mode
@@ -343,22 +469,51 @@
   )
 
 ;; Ledger mode
-(add-hook 'ledger-mode-hook (lambda ()
-        (setq ledger-reports
-                '(("bal" "%(binary) -f %(ledger-file) bal")
-                ("reg" "%(binary) -f %(ledger-file) reg")
-                ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
-                ("account" "%(binary) -f %(ledger-file) reg %(account)")))))
 
-;; Pasting images in org
-;; https://zzamboni.org/post/my-doom-emacs-configuration-with-commentary/
-(defun zz/org-download-paste-clipboard (&optional use-default-filename)
-  (interactive "P")
-  (require 'org-download)
-  (let ((file
-         (if (not use-default-filename)
-             (read-string (format "Filename [%s]: "
-                                  org-download-screenshot-basename)
-                          nil nil org-download-screenshot-basename)
-           nil)))
-    (org-download-clipboard file)))
+(defun gh/ledger-insert-date ()
+  (interactive)
+  (insert (format-time-string "%Y/%m/%d"))
+  )
+
+(map! :map ledger-mode-map
+      "C-c C-l" 'ledger-mode-clean-buffer
+      "C-c C-i" 'gh/ledger-insert-date)
+
+
+;; Experimental
+;;
+;; (setq org-file-apps (delq (assoc "\\.pdf\\'" org-file-apps) org-file-apps))
+(setcdr (assoc "\\.pdf\\'" org-file-apps) 'emacs)
+
+(use-package! org-roam-bibtex
+  :after org-roam
+  :config
+  (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
+
+(setq org-roam-capture-templates
+      '(;; ... other templates
+        ;; bibliography note template
+        ("r" "bibliography reference" plain "%?"
+        :target
+        (file+head "references/${citekey}.org" "#+title: ${title}\n")
+        :unnarrowed t)))
+
+;; https://github.com/hlissner/doom-emacs/issues/581
+(defun dlukes/ediff-doom-config (file)
+  "ediff the current config with the examples in doom-emacs-dir
+
+There are multiple config files, so FILE specifies which one to
+diff.
+"
+  (interactive
+    (list (read-file-name "Config file to diff: " doom-private-dir)))
+  (let* ((stem (file-name-base file))
+          (customized-file (format "%s.el" stem))
+          (template-file-regex (format "^%s.example.el$" stem)))
+    (ediff-files
+      (concat doom-private-dir customized-file)
+      (car (directory-files-recursively
+             doom-emacs-dir
+             template-file-regex
+             nil
+             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
