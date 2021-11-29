@@ -396,9 +396,8 @@ org-todo-keyword-faces
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%Y-%m-%d>
 
-* [[elisp:(org-roam-dailies-goto-yesterday 1)][Yesterday]]
-* [[id:78738d7a-4c44-489f-a262-e75611ca4e8a][Today]]
-* [[id:0ec6b274-4f95-44f1-acd5-5c163478f40a][Contacts]]
+* [[id:78738d7a-4c44-489f-a262-e75611ca4e8a][Values]]
+* [[id:0ec6b274-4f95-44f1-acd5-5c163478f40a][People]]
 
 * Ponder and Plan
 
