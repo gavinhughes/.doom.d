@@ -31,3 +31,15 @@
   (if (eq (car custom-enabled-themes) dark-theme)
       (load-theme light-theme)
     (load-theme dark-theme)))
+
+(defun gh/relative-name-nondirectory (path level)
+  "Return the filename of the directory LEVEL above the end of path.
+   Zero indexed. (First above is level 0.)"
+
+  (if (= level 0)
+      (file-name-nondirectory (directory-file-name (file-name-directory path)))
+      (gh/relative-name-nondirectory (directory-file-name (file-name-directory path)) (- level 1))))
+
+(defun gh/insert-time ()
+  (interactive)
+  (insert (format-time-string "%I:%M" (current-time))))

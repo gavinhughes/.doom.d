@@ -136,7 +136,7 @@
  "M-s-["          'previous-buffer
  "C-c c"          'clone-indirect-buffer
  "s-p"            'ps-print-buffer-with-confirmation
- "M-;"            'org-roam-node-find
+ "s-;"            'org-roam-node-find
  "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
 
  ;; Windows
@@ -342,9 +342,7 @@ org-todo-keyword-faces
   "C-M-S-y"            'org-download-yank
 
   ;; Roam
-  "M-I"                'org-roam-node-insert
-  "s-i"                'org-roam-insert
-  "s-I"                'org-roam-insert-immediate
+  "s-I"                'org-roam-node-insert
   :niv "s-j"           'org-todo
 
 )
@@ -481,6 +479,7 @@ org-todo-keyword-faces
 
 ;; Experimental
 ;;
+;; Open pdfs with emacs. Better would be PDF Expert. How to do that?
 ;; (setq org-file-apps (delq (assoc "\\.pdf\\'" org-file-apps) org-file-apps))
 (setcdr (assoc "\\.pdf\\'" org-file-apps) 'emacs)
 
@@ -516,3 +515,35 @@ diff.
              template-file-regex
              nil
              (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
+
+;; ;; Remove bold from links
+;; (doom-themes-set-faces nil
+;;  '(default ((t (:weight normal, :underline t)))))
+
+;; Remove bold from links
+(custom-theme-set-faces
+  'user
+  '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15)))) ;; systemBlueColor
+  '(org-level-2 ((t (:weight bold :foreground "systemBrownColor")))) ;; systemBlueColor
+  '(org-level-3 ((t (:foreground "systemTealColor")))) ;; systemBlueColor
+  '(org-level-4 ((t (:foreground "systemBrownColor")))) ;; systemBlueColor
+  '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
+    ;; "pink1" is here in search of a solution that would undefine the color on a link
+    ;; and inherit.
+
+(setq ispell-personal-dictionary "~/aspell.en.pws")
+
+;; https://github.com/jwiegley/dot-emacs/blob/master/dot-org.el
+;; Needs debugging.
+(defun org-get-safari-link ()
+  (let ((subject (substring (do-applescript
+                             (string-to-multibyte "tell application \"Safari\"
+        name of document of front window end tell")) 1 -1))
+        (url (substring (do-applescript
+                         (string-to-multibyte "tell application \"Safari\"
+        URL of document of front window end tell")) 1 -1)))
+    (org-make-link-string url subject)))
+
+(defun org-insert-url-link ()
+  (interactive)
+  (insert (org-get-safari-link)))
