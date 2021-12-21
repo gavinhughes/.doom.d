@@ -40,6 +40,29 @@
       (file-name-nondirectory (directory-file-name (file-name-directory path)))
       (gh/relative-name-nondirectory (directory-file-name (file-name-directory path)) (- level 1))))
 
+
+
 (defun gh/insert-time ()
   (interactive)
   (insert (format-time-string "%I:%M" (current-time))))
+
+
+
+(defun gh/get-safari-front-name ()
+  (do-applescript (string-to-multibyte "
+tell application \"Safari\"
+  name of document of front window
+end tell
+")))
+
+(defun gh/get-safari-front-url ()
+  (do-applescript (string-to-multibyte "
+tell application \"Safari\"
+  URL of document of front window
+end tell
+")))
+
+(defun gh/org-insert-safari-front-link ()
+  (interactive)
+  (insert (org-make-link-string (gh/get-safari-front-url)
+                                (gh/get-safari-front-name))))

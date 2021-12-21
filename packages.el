@@ -36,8 +36,8 @@
 ;; Try installing it again locally if it gets updated. [2021-11-26 Fri]
 ;; ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages
 
-(package! org-roam-bibtex
-  :recipe (:host github :repo "org-roam/org-roam-bibtex"))
+;; (package! org-roam-bibtex
+;;   :recipe (:host github :repo "org-roam/org-roam-bibtex"))
 
 ;; When using bibtex-completion via the `biblio` module
 (unpin! bibtex-completion helm-bibtex ivy-bibtex)

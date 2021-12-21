@@ -1,5 +1,12 @@
 ;;; config.el -*- lexical-binding: t; -*-
 
+;; TODO
+;;
+;; Change image paste directory structure for org image download
+;;   set so that it works in the same directory structure as logseq?
+;;   see image green propulsion file [2021-12-13 Mon]
+;;
+;;
 ;; Start the Emacs server from this instance so that all emacsclient calls are routed here.
 ;; (if (server-running-p ()) nil (server-start))
 
@@ -189,8 +196,8 @@
  ;; `m` Mac OS
  :leader "m m d"   '+macos/open-in-default-program
  :leader "m m o"   'reveal-in-osx-finder
- :leader "m m s"   'org-mac-safari-get-frontmost-url
- :leader "m m S"   'org-mac-safari-insert-frontmost-url
+ :leader "m m s"   'gh/get-safari-front-url
+ :leader "m m S"   'gh/org-insert-safari-front-link
 
  ;; `t` Toggle
  :leader "t v"   'visual-fill-column-mode
@@ -204,7 +211,7 @@
 ;; (require 'org-mac-link)
 
 (setq
-  org-directory "~/OrgNotes/"
+  org-directory "~/iCloud/OrgNotes/"
   org-attach-id-dir (concat org-directory "attachments/")
   org-ellipsis " ▼ "
   org-cycle-separator-lines 3
@@ -214,7 +221,7 @@
   org-blank-before-new-entry '((heading . nil)
                                (plain-list-item . nil))
    ;; https://stackoverflow.com/a/41969519/173162
-  org-agenda-files (directory-files-recursively "~/OrgNotes/" "\\.org$")
+  org-agenda-files (directory-files-recursively "~/iCloud/OrgNotes/" "\\.org$")
   org-agenda-window-setup 'current-window
   org-agenda-show-future-repeats nil
   org-agenda-skip-deadline-if-done t
@@ -382,12 +389,13 @@ org-todo-keyword-faces
 ;;     (apply #'org-roam-node-insert args)))
 
 (setq org-roam-v2-ack t
-      org-roam-directory "~/OrgNotes/Roam/"
+      org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
+
       org-roam-capture-templates '(("d" "default" plain "%?"
                                       :target (file+head "${slug}.org"
                                                          "#+TITLE:   ${title}\n#+STARTUP: show2levels")
                                       :unnarrowed t))
-      org-roam-dailies-directory "daily/"
+      org-roam-dailies-directory "daily"
       org-roam-dailies-capture-templates '(("d" "default" entry
                                             "* %?"
                                         :target (file+head
@@ -483,18 +491,18 @@ org-todo-keyword-faces
 ;; (setq org-file-apps (delq (assoc "\\.pdf\\'" org-file-apps) org-file-apps))
 (setcdr (assoc "\\.pdf\\'" org-file-apps) 'emacs)
 
-(use-package! org-roam-bibtex
-  :after org-roam
-  :config
-  (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
+;; (use-package! org-roam-bibtex
+;;   :after org-roam
+;;   :config
+;;   (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
 
-(setq org-roam-capture-templates
-      '(;; ... other templates
-        ;; bibliography note template
-        ("r" "bibliography reference" plain "%?"
-        :target
-        (file+head "references/${citekey}.org" "#+title: ${title}\n")
-        :unnarrowed t)))
+;; (setq org-roam-capture-templates
+;;       '(;; ... other templates
+;;         ;; bibliography note template
+;;         ("r" "bibliography reference" plain "%?"
+;;         :target
+;;         (file+head "references/${citekey}.org" "#+title: ${title}\n")
+;;         :unnarrowed t)))
 
 ;; https://github.com/hlissner/doom-emacs/issues/581
 (defun dlukes/ediff-doom-config (file)
@@ -533,17 +541,7 @@ diff.
 
 (setq ispell-personal-dictionary "~/aspell.en.pws")
 
-;; https://github.com/jwiegley/dot-emacs/blob/master/dot-org.el
-;; Needs debugging.
-(defun org-get-safari-link ()
-  (let ((subject (substring (do-applescript
-                             (string-to-multibyte "tell application \"Safari\"
-        name of document of front window end tell")) 1 -1))
-        (url (substring (do-applescript
-                         (string-to-multibyte "tell application \"Safari\"
-        URL of document of front window end tell")) 1 -1)))
-    (org-make-link-string url subject)))
+;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
+;; Installed. How to use it? [2021-12-13 Mon]
+;; (require 'org-roam-protocol)
 
-(defun org-insert-url-link ()
-  (interactive)
-  (insert (org-get-safari-link)))

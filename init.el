@@ -84,7 +84,7 @@
 
        :tools
        ;;ansible
-       biblio              ; Bibliographies for org
+       ;; biblio              ; Bibliographies for org
        ;;debugger          ; FIXME stepping through code, to help you add bugs
        ;;direnv
        ;;docker
