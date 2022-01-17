@@ -67,9 +67,12 @@
   esup-depth 0
   )
 
+(setq ispell-personal-dictionary "~/.doom.d/aspell.en.pws")
+
+(setq projectile-indexing-method 'native)
 (add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
-  ;; Might be better to set this .projectile.
-  ;; Not working.  Why?
+;; (add-to-list 'projectile-globally-ignored-directories "*bak")
+  ;; Ignores aren't working.  Why?  [2021-12-28 Tue]
   ;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
 (setq-default major-mode 'org-mode)
   ;; If set to ‘nil’, the major mode is taken from the previously current buffer.
@@ -196,8 +199,8 @@
  ;; `m` Mac OS
  :leader "m m d"   '+macos/open-in-default-program
  :leader "m m o"   'reveal-in-osx-finder
- :leader "m m s"   'gh/get-safari-front-url
- :leader "m m S"   'gh/org-insert-safari-front-link
+ :leader "m m S"   'gh/yank-safari-front-url
+ :leader "m m s"   'gh/org-insert-safari-front-link
 
  ;; `t` Toggle
  :leader "t v"   'visual-fill-column-mode
@@ -295,11 +298,12 @@
 
     org-todo-keywords
     '(
-        (sequence
-        "[ ](j)"
-        "|"
-        "[X](k)"
-        )
+        ;;;; Removing these because they don't play well with logseq
+        ;; (sequence
+        ;; "[ ](j)"
+        ;; "|"
+        ;; "[X](k)"
+        ;; )
         (sequence
         "TODO(u)"
         "|"
@@ -317,14 +321,14 @@ org-priority-faces '((?A . (:foreground "dim grey"))
                         (?C . (:foreground "dim grey")))
 org-todo-keyword-faces
 '(
-        ("TODO" :foreground "dim grey" :weight bold)
-        ("WIP" :foreground "dim grey" :weight bold)
-        ("DONE" :foreground "grey25" :weight bold)
-        ("PENDING" :foreground "dim grey" :weight bold)
-        ("PAUSED" :foreground "dim grey" :weight bold)
+        ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+        ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+        ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
+        ("PENDING" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+        ("PAUSED" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
         ("[ ]" :foreground "dim grey")
         ("[X]" :foreground "grey25")
-        ("CANCELLED" :foreground "grey25" :weight bold))
+        ("CANCELLED" :foreground "grey25" :weight bold :family "DejaVu Sans Mono"))
    ))
 
 (map! :map org-mode-map
@@ -401,11 +405,6 @@ org-todo-keyword-faces
                                         :target (file+head
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%Y-%m-%d>
-
-* [[id:78738d7a-4c44-489f-a262-e75611ca4e8a][Values]]
-* [[id:0ec6b274-4f95-44f1-acd5-5c163478f40a][People]]
-
-* Ponder and Plan
 
 "))))
 
@@ -535,11 +534,12 @@ diff.
   '(org-level-2 ((t (:weight bold :foreground "systemBrownColor")))) ;; systemBlueColor
   '(org-level-3 ((t (:foreground "systemTealColor")))) ;; systemBlueColor
   '(org-level-4 ((t (:foreground "systemBrownColor")))) ;; systemBlueColor
+  '(org-level-5 ((t (:foreground "systemTealColor")))) ;; systemBlueColor
+  '(org-level-6 ((t (:foreground "systemBrownColor")))) ;; systemBlueColor
   '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
     ;; "pink1" is here in search of a solution that would undefine the color on a link
     ;; and inherit.
 
-(setq ispell-personal-dictionary "~/aspell.en.pws")
 
 ;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
 ;; Installed. How to use it? [2021-12-13 Mon]
