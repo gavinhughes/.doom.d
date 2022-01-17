@@ -1,4 +1,4 @@
-;;; my/functions.el -*- lexical-binding: t; -*-
+;; my/functions.el -*- lexical-binding: t; -*-
 
 ;; (defun gh/toggle-theme ()
 ;;
@@ -62,7 +62,34 @@ tell application \"Safari\"
 end tell
 ")))
 
+(defun gh/yank-safari-front-url ()
+  "Yank Safari's front window URL."
+  (interactive)
+  (kill-new (gh/get-safari-front-url)))
+
 (defun gh/org-insert-safari-front-link ()
+  "Insert a link to the page in Safari's front window."
   (interactive)
   (insert (org-make-link-string (gh/get-safari-front-url)
                                 (gh/get-safari-front-name))))
+
+
+
+(defun gh/org-roam-dailies-goto-next-note-or-tomorrow ()
+  "Find next daily-note, or tomorrow it at newest note."
+
+  (interactive "p")
+  (unless (org-roam-dailies--daily-note-p)
+    (user-error "Not in a daily-note"))
+  (if (eq position (- (length dailies) 1))
+      (org-roam-dailies-goto-tomorrow (length dailies))))
+
+
+;; WIP
+;; (defun gh/org-roam-dailies-goto-next-note-or-tomorrow ()
+;;   "Find next daily-note, or tomorrow it at newest note."
+
+;;   (interactive "p")
+;; (condition-case nil
+;;     (delete-file filename)
+;;   ((debug error) nil))
