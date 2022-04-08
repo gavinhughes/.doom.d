@@ -16,18 +16,17 @@
   ;; TODO Not yet implemented
 (package! lorem-ipsum)
 (package! exec-path-from-shell)
-(package! org-anki)
 (package! reveal-in-osx-finder)
 (package! auto-compile)
 (package! dired-narrow)
   ;; http://pragmaticemacs.com/emacs/dynamically-filter-directory-listing-with-dired-narrow/
 (unpin! org-roam)
-(package! org-roam-ui)
-(package! org-pandoc-import
-  ;; https://github.com/tecosaur/org-pandoc-import
-  :recipe (:host github
-           :repo "tecosaur/org-pandoc-import"
-           :files ("*.el" "filters" "preprocessors")))
+;; (package! org-roam-ui)
+;; (package! org-pandoc-import
+;;   ;; https://github.com/tecosaur/org-pandoc-import
+;;   :recipe (:host github
+;;            :repo "tecosaur/org-pandoc-import"
+;;            :files ("*.el" "filters" "preprocessors")))
 (package! org-appear)
   ;; Auto-show markup symbols (=, *, etc) in org
 
@@ -40,6 +39,11 @@
 ;;   :recipe (:host github :repo "org-roam/org-roam-bibtex"))
 
 ;; When using bibtex-completion via the `biblio` module
-(unpin! bibtex-completion helm-bibtex ivy-bibtex)
+;; (unpin! bibtex-completion helm-bibtex ivy-bibtex)
 
 (package! powerthesaurus)
+(package! org-mac-link)
+(package! org-logseq :recipe (:host github :repo "llcc/org-logseq"))
+
+;;;; Not currently used:
+;; (package! org-anki)

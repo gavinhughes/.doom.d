@@ -1,3 +1,11 @@
+#+title: Config
+#+startup: overview
+
+* TODO
+- Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
+
+* Startup and load
+#+begin_src emacs-lisp :tangle yes
 ;;; config.el -*- lexical-binding: t; -*-
 
 ;; Start the Emacs server from this instance so that all emacsclient calls are routed here.
@@ -81,7 +89,10 @@
 
 ;; Maximize frame at startup.
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
+#+end_src
 
+* Global keymaps
+#+begin_src emacs-lisp :tangle yes
 (map!
  ;; DON'T USE. Assigned in MacOS:
  ;;   C-M-<return>    Magnet maximize window
@@ -188,7 +199,11 @@
  ;; `t` Toggle
  :leader "t v"   'visual-fill-column-mode
  )
+ #+end_src
 
+* Org Mode
+** Config
+#+begin_src emacs-lisp :tangle yes
 ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages
 ;; Better way to load using packages.el?
 ;; (add-load-path! "my/org-mode")
@@ -204,7 +219,11 @@
   org-ctrl-k-protect-subtree t
   org-blank-before-new-entry '((heading . nil)
                                (plain-list-item . nil)))
+#+end_src
 
+Save org buffers every 5 seconds of idle time. Necessary for Logseq. Without it, I would jump over to Logseq and make edits without first writing changes in the org file resulting in a fork.
+
+#+begin_src emacs-lisp :tangle yes
 (setq auto-save-timeout 30)
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 
@@ -239,9 +258,16 @@
   ;; org-startup-with-latex-preview 0
     ;; Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
  )
+#+end_src
 
+** Appearance
+Make text easier to read.
+#+begin_src emacs-lisp :tangle yes
 (add-hook 'org-mode-hook (lambda () (setq line-spacing 10)))
+#+end_src
 
+Fonts
+#+begin_src emacs-lisp :tangle yes
 (setq
     org-priority-faces '((?A . (:foreground "dim grey"))
                         (?B . (:foreground "dim grey"))
@@ -258,7 +284,10 @@
             ("[X]" :foreground "grey25")
             ("CANCELLED" :foreground "grey25" :weight bold :family "DejaVu Sans Mono"))
    )
+#+end_src
 
+Remove bold from links
+#+begin_src emacs-lisp :tangle yes
 (custom-theme-set-faces
   'user
   '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15)))) ;; systemBlueColor
@@ -270,7 +299,10 @@
   '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
     ;; "pink1" is here in search of a solution that would undefine the color on a link
     ;; and inherit.
+#+end_src
 
+** Keymaps
+#+begin_src emacs-lisp :tangle yes
 (map! :map org-mode-map
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
   :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
@@ -324,7 +356,9 @@
     :leader "r r"     'org-roam-node-find
     :leader "r b"     'org-roam-buffer-toggle
 )
+#+end_src
 
+#+begin_src emacs-lisp :tangle yes
 ;; (after! org-roam
 ;;         :config
 ;;         (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
@@ -336,6 +370,11 @@
 ;;         (org-roam-capture-templates (list (append (car org-roam-capture-templates)
 ;;                                                   '(:immediate-finish t)))))
 ;;     (apply #'org-roam-node-insert args)))
+#+end_src
+
+** More
+#+begin_src emacs-lisp :tangle yes
+
 
 ;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
 ;; Installed. How to use it? [2021-12-13 Mon]
@@ -371,8 +410,31 @@
 ;; ;; Remove bold from links
 ;; (doom-themes-set-faces nil
 ;;  '(default ((t (:weight normal, :underline t)))))
+#+end_src
 
+** Literate config
+I'm using the Doom +literate module, but don't want to tangle automatically on save. First, I have org configured to autosave to avoid losing work in Roam. Tangle on autosave would result in config.el in a broken state during config.org edits.
+
+#+begin_src emacs-lisp :tangle yes
 (remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
+#+end_src
+
+** File associations
+This was working before going literate. Not sure it's even needed.
+Open pdfs with emacs.
+
+#+begin_src emacs-lisp :tangle no
+;; (setq org-file-apps (delq (assoc "\\.pdf\\'" org-file-apps) org-file-apps))
+;; (setcdr (assoc "\\.pdf\\'" org-file-apps) 'emacs)
+#+end_src
+
+*** TODO This needs to work in Dired, not Orgs
+Better would be PDF Expert. How to do that?
+Also want to be able to open Numbers files, currently this dives into the bundle.
+
+
+** More org
+#+begin_src emacs-lisp :tangle yes
 
 ;; BROKEN
 ;; For export to .md, .doc, etc.
@@ -426,6 +488,10 @@
         "PAUSED(a)"
         "|"
       ))))
+#+end_src
+
+** Org Roam
+#+begin_src emacs-lisp :tangle yes
 
 (setq org-roam-v2-ack t
       org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
@@ -442,24 +508,82 @@
                                         :target (file+head
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%Y-%m-%d>
-#+STARTUP: overview\n\n
+,#+STARTUP: overview\n\n
 | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
  TODO [[file:daily.org][Daily]]
  TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
 "))))
+#+end_src
+** Experiment
+#+begin_src emacs-lisp :tangle no
+;; (use-package! websocket
+;;     :after org-roam)
+;; (use-package! org-roam-ui
+;;     :after org-roam ;; or :after org
+;; ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+;; ;;         a hookable mode anymore, you're advised to pick something yourself
+;; ;;         if you don't care about startup time, use
+;; ;;  :hook (after-init . org-roam-ui-mode)
+;;     :config
+;;     (setq org-roam-ui-sync-theme t
+;;           org-roam-ui-follow t
+;;           org-roam-ui-update-on-save t
+;;           org-roam-ui-open-on-start t))
 
+;; https://github.com/org-roam/org-roam/wiki/Hitchhiker's-Rough-Guide-to-Org-roam-V2#showing-the-number-of-backlinks-for-each-node-in-org-roam-node-find
+;; (cl-defmethod org-roam-node-directories ((node org-roam-node))
+;;   (if-let ((dirs (file-name-directory (file-relative-name (org-roam-node-file node) org-roam-directory))))
+;;       (format "(%s)" (car (f-split dirs)))
+;;     ""))
+
+;; (cl-defmethod org-roam-node-backlinkscount ((node org-roam-node))
+;;   (let* ((count (caar (org-roam-db-query
+;;                        [:select (funcall count source)
+;;                                 :from links
+;;                                 :where (= dest $s1)
+;;                                 :and (= type "id")]
+;;                        (org-roam-node-id node)))))
+;;     (format "[%d]" count)))
+
+;; (setq org-roam-node-display-template "${directories:10} ${tags:10} ${title:100} ${backlinkscount:6}")
+
+;; ;; org-roam buffer
+;; (setq org-roam-mode-section-functions
+;;       (list ;; #'org-roam-backlinks-section
+;;             ;; #'org-roam-reflinks-section
+;;             ;; #'org-roam-unlinked-references-section
+;;             ))
+;; (add-to-list 'display-buffer-alist
+;;              '("\\*org-roam\\*"
+;;                (display-buffer-in-side-window)
+;;                (side . right)
+;;                (slot . 0)
+;;                (window-width . 0.33)
+;;                (window-parameters . ((no-other-window . t)
+;;                                      (no-delete-other-windows . t)))))
+#+end_src
+
+* Other Modes
+** Haskell
+#+begin_src emacs-lisp :tangle yes
 (map! :map haskell-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
  :i "M-s-:" (cmd! (insert "<- "))
  )
+ #+end_src
 
+** Elixir and Phoenix
+#+begin_src emacs-lisp :tangle yes
 (map! :map elixir-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
  :i "M-s-:" (cmd! (insert "<- "))
  :i "s-:"   (cmd! (insert "=> "))
  :i "M-s-." (cmd! (insert "|> "))
  )
+#+end_src
 
+** Markdown
+#+begin_src emacs-lisp :tangle yes
 (map! :map markdown-mode-map
     ;; Make m-dash behavior consistent with Mac.
     "M--" 'undefine
@@ -467,7 +591,11 @@
 ;; Errors on markdown-insert-list-item
 ;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
  )
+#+end_src
 
+
+** Eww
+#+begin_src emacs-lisp :tangle yes
 (after! eww
   ;; (load-directory! "my/eww-mode")
   ;; This has global effect.  How to limit to just eww mode?
@@ -479,7 +607,9 @@
         "M-s-]" 'eww-forward-url)
         ;; "<s-mouse-1>" 'my-eww-open-in-new-window
   )
-
+#+end_src
+** Ledger
+#+begin_src emacs-lisp :tangle yes
 (defun gh/ledger-insert-date ()
   (interactive)
   (insert (format-time-string "%Y/%m/%d"))
@@ -488,7 +618,17 @@
 (map! :map ledger-mode-map
       "C-c C-l" 'ledger-mode-clean-buffer
       "C-c C-i" 'gh/ledger-insert-date)
+#+end_src
 
+** Unused
+#+begin_src emacs-lisp :tangle no
+(map! :map inferior-ess-mode
+  :n "M-j" "<- "
+  )
+#+end_src
+
+* Experiment
+#+begin_src emacs-lisp :tangle yes
 ;; https://github.com/hlissner/doom-emacs/issues/581
 (defun dlukes/ediff-doom-config (file)
   "ediff the current config with the examples in doom-emacs-dir
@@ -508,3 +648,6 @@ diff.
              template-file-regex
              nil
              (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
+
+
+#+end_src
