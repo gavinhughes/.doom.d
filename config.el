@@ -182,8 +182,6 @@
  ;; `m` Mac OS
  :leader "m m d"   '+macos/open-in-default-program
  :leader "m m o"   'reveal-in-osx-finder
- :leader "m m S"   'gh/yank-safari-front-url
- :leader "m m s"   'gh/org-insert-safari-front-link
 
  ;; `t` Toggle
  :leader "t v"   'visual-fill-column-mode
@@ -196,6 +194,7 @@
 
 (setq
   org-directory "~/iCloud/OrgNotes/"
+  org-archive-location "archive.org::* From %s"
   org-attach-id-dir (concat org-directory "attachments/")
   org-ellipsis " ▼ "
   org-cycle-separator-lines 3
@@ -207,38 +206,6 @@
 
 (setq auto-save-timeout 30)
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
-
-   ;; https://stackoverflow.com/a/41969519/173162
-  ;; org-agenda-files (directory-files-recursively "~/iCloud/OrgNotes/" "\\.org$")
-  ;; org-agenda-window-setup 'current-window
-  ;; org-agenda-show-future-repeats nil
-  ;; org-agenda-skip-deadline-if-done t
-  ;; org-agenda-skip-scheduled-if-done t
-  ;; org-agenda-skip-timestamp-if-done t
-  ;; org-agenda-start-on-weekday 0
-  ;; org-agenda-custom-commands
-  ;;     '(("d" "Today's Tasks"
-  ;;        ((agenda "" ((org-agenda-span 1)
-  ;;       	      (org-agenda-overriding-header "Today's Tasks"))))))
-
-  ;; TAGS
-(setq
-  org-use-tag-inheritance nil
-  org-agenda-use-tag-inheritance nil
-  org-tag-alist '((:startgrouptag)
-                  ("Interaction")
-                  (:grouptags)
-                  ("ia")
-                  ("{ia#.+}")
-                  (:endgrouptag))
-
-  ;; https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
-  ;; org-preview-latex-default-process 'dvisvgm
-  ;; org-format-latex-options '(:scale 2.0)
-  ;; org-startup-with-inline-images 0
-  ;; org-startup-with-latex-preview 0
-    ;; Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
- )
 
 (add-hook 'org-mode-hook (lambda () (setq line-spacing 10)))
 
@@ -261,15 +228,18 @@
 
 (custom-theme-set-faces
   'user
-  '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15)))) ;; systemBlueColor
-  '(org-level-2 ((t (:weight bold :foreground "systemBrownColor")))) ;; systemBlueColor
-  '(org-level-3 ((t (:foreground "systemTealColor")))) ;; systemBlueColor
-  '(org-level-4 ((t (:foreground "systemBrownColor")))) ;; systemBlueColor
-  '(org-level-5 ((t (:foreground "systemTealColor")))) ;; systemBlueColor
-  '(org-level-6 ((t (:foreground "systemBrownColor")))) ;; systemBlueColor
+  ;; Use only two alternating colors for heading.
+  '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15))))
+  '(org-level-2 ((t (:weight bold :foreground "systemBrownColor"))))
+  '(org-level-3 ((t (:foreground "systemTealColor"))))
+  '(org-level-4 ((t (:foreground "systemBrownColor"))))
+  '(org-level-5 ((t (:foreground "systemTealColor"))))
+  '(org-level-6 ((t (:foreground "systemBrownColor"))))
+
+  ;; Remove bold from links.
+  ;; "pink1" is here in search of a solution that would undefine the color on a link
+  ;; and inherit.
   '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
-    ;; "pink1" is here in search of a solution that would undefine the color on a link
-    ;; and inherit.
 
 (map! :map org-mode-map
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
@@ -280,19 +250,19 @@
 
 
 
-    "M-s-SPC" 'org-capture
+  "M-s-SPC"            'org-capture
 
-  ;; Should all Hypers be defined globally?
   "H-n"                'org-next-visible-heading
   "H-p"                'org-previous-visible-heading
-  "H-r"                '+org/refile-to-current-file
+  "H-r"                (cmd! (+org/refile-to-file nil "daily.org"))
   "H-R"                '+org/refile-to-file
   "H-a"                'org-archive-subtree
+  "C-<"                'org-do-promote
+  "C->"                'org-do-demote
   ;; "s-."                'org-shiftright
   ;; "s->"                'org-shiftleft
   "H-l"                "C-u C-u C-c C-x C-l" ;; Preview all latex
   "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
-  "s-M"                'org-refile
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
   "M-d"                'doom/delete-this-file
@@ -304,6 +274,17 @@
 
   :niv "s-j"           'org-todo
 
+  :leader "m m S"   'gh/yank-safari-front-url
+  :leader "m m s"   'gh/org-insert-safari-front-link
+)
+
+(map!
+    "H-,"         'org-roam-dailies-goto-today
+    ;; "H-."         (cmd! (find-file (??? (org-roam-directory "daily.org"))))
+
+    "H-d"         'org-roam-dailies-goto-date
+    "H-["         'org-roam-dailies-goto-previous-note
+    "H-]"         'org-roam-dailies-goto-next-note
 )
 
 (map! :map org-roam-mode-map
@@ -311,31 +292,29 @@
         "<f7>"        'org-tags-view
         "<f9>"        'org-agenda-list
 
-    "H-,"         'org-roam-dailies-goto-today
-    ;; "H-."         (cmd! (find-file (??? (org-roam-directory "daily.org"))))
-
-    "H-d"         'org-roam-dailies-goto-date
-    "H-["         'org-roam-dailies-goto-previous-note
-    "H-]"         'org-roam-dailies-goto-next-note
-
-  ;; Roam
   "s-I"                'org-roam-node-insert
         ;; `r` org-roam
     :leader "r r"     'org-roam-node-find
     :leader "r b"     'org-roam-buffer-toggle
 )
 
-;; (after! org-roam
-;;         :config
-;;         (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
+(setq
+  org-use-tag-inheritance nil
+  org-agenda-use-tag-inheritance nil
+  org-tag-alist '((:startgrouptag)
+                  ("Interaction")
+                  (:grouptags)
+                  ("ia")
+                  ("{ia#.+}")
+                  (:endgrouptag))
 
-;; Not working yet. And will probably be in the next release of v2
-;; (defun org-roam-node-insert-immediate (arg &rest args)
-;;   (interactive "p")
-;;   (let ((args (cons arg args))
-;;         (org-roam-capture-templates (list (append (car org-roam-capture-templates)
-;;                                                   '(:immediate-finish t)))))
-;;     (apply #'org-roam-node-insert args)))
+  ;; https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
+  ;; org-preview-latex-default-process 'dvisvgm
+  ;; org-format-latex-options '(:scale 2.0)
+  ;; org-startup-with-inline-images 0
+  ;; org-startup-with-latex-preview 0
+    ;; Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
+ )
 
 ;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
 ;; Installed. How to use it? [2021-12-13 Mon]
@@ -367,10 +346,6 @@
 ;;         :target
 ;;         (file+head "references/${citekey}.org" "#+title: ${title}\n")
 ;;         :unnarrowed t)))
-
-;; ;; Remove bold from links
-;; (doom-themes-set-faces nil
-;;  '(default ((t (:weight normal, :underline t)))))
 
 (remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
 
@@ -429,7 +404,6 @@
 
 (setq org-roam-v2-ack t
       org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
-      ;; org-roam-directory "~/iCloud/OrgNotes/Roam"
       org-roam-db-autosync-mode t
 
       org-roam-capture-templates '(("d" "default" plain "%?"
@@ -444,9 +418,25 @@
 "#+TITLE: %<%Y-%m-%d>
 #+STARTUP: overview\n\n
 | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
- TODO [[file:daily.org][Daily]]
- TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+\* TODO [[file:daily.org][Daily]]
+\* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+\* TODO [[elisp:(org-agenda)][Agenda]]
 "))))
+
+(setq
+   org-agenda-files (sort (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$") #'string>))
+   org-agenda-window-setup 'reorganize-frame
+   ;; (search category-keep)))
+   ;; org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
+   org-agenda-skip-deadline-if-done t
+   org-agenda-skip-scheduled-if-done t
+   org-agenda-skip-timestamp-if-done t
+   org-agenda-start-on-weekday 0
+   org-agenda-custom-commands
+       '(("d" "Today's Tasks"
+          ((agenda "" ((org-agenda-span 1)
+         	      (org-agenda-overriding-header "Today's Tasks")))))
+   org-agenda-custom-commands)
 
 (map! :map haskell-mode-map
  :i "M-s-;" (cmd! (insert "-> "))

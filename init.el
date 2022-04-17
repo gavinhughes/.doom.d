@@ -80,7 +80,7 @@
        :checkers
        syntax              ; tasing you for every semicolon you forget
        (spell +flyspell) ; tasing you for misspelling mispelling
-       grammar           ;; use of langtool requires the java runtime
+       ;;grammar           ;; use of langtool requires the java runtime
 
        :tools
        ;;ansible
