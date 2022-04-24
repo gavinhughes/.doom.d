@@ -42,7 +42,7 @@
   evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
   auto-save-default t                         ; Nobody likes to loose work, I certainly don't
   inhibit-compacting-font-caches t            ; When there are lots of glyphs, keep them in memory
-  truncate-string-ellipsis "…"                ; Unicode ellispis are nicer than "...", and also save /precious/ space
+  truncate-string-ellipsis "…"                ; Use unicode ellipsis
   global-visual-line-mode t                   ; Visual line navigation everywhere.
 
   ;; ispell-program-name "hunspell"
@@ -280,8 +280,8 @@
 
 (map!
     "H-,"         'org-roam-dailies-goto-today
-    ;; "H-."         (cmd! (find-file (??? (org-roam-directory "daily.org"))))
-
+    "H-."         (cmd! (find-file (expand-file-name "daily.org"
+                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
     "H-d"         'org-roam-dailies-goto-date
     "H-["         'org-roam-dailies-goto-previous-note
     "H-]"         'org-roam-dailies-goto-next-note
@@ -420,7 +420,7 @@
 | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
 \* TODO [[file:daily.org][Daily]]
 \* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-\* TODO [[elisp:(org-agenda)][Agenda]]
+\* TODO [[elisp:(org-agenda)][Agenda]] ([[elisp:(setq org-agenda-files (sort (directory-files-recursively (concat org-roam-directory \"/daily\") \"\\.org$\") #'string>))][Rebuild]])
 "))))
 
 (setq
