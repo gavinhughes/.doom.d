@@ -84,7 +84,7 @@ end tell
   (if (eq position (- (length dailies) 1))
       (org-roam-dailies-goto-tomorrow (length dailies))))
 
-(defun gh/refreshed-org-agendal ()
+(defun gh/refreshed-org-agenda ()
   "Refresh org-agenda-files and then call org-agenda."
 
   (interactive)
