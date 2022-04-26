@@ -505,9 +505,9 @@ Also want to be able to open Numbers files, currently this dives into the bundle
 "#+TITLE: %<%Y-%m-%d>
 ,#+STARTUP: overview\n\n
 | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+\* TODO ([[elisp:(gh/refreshed-org-agenda)][Agenda]])
 \* TODO [[file:daily.org][Daily]]
 \* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-\* TODO [[elisp:(org-agenda)][Agenda]] ([[elisp:(setq org-agenda-files (sort (directory-files-recursively (concat org-roam-directory \"/daily\") \"\\.org$\") #'string>))][Rebuild]])
 "))))
 #+end_src
 

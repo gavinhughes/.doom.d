@@ -84,6 +84,17 @@ end tell
   (if (eq position (- (length dailies) 1))
       (org-roam-dailies-goto-tomorrow (length dailies))))
 
+(defun gh/refreshed-org-agendal ()
+  "Refresh org-agenda-files and then call org-agenda."
+
+  (interactive)
+  (setq org-agenda-files
+      (sort
+       (directory-files-recursively
+        (concat org-roam-directory "/daily") "\\.org$") #'string>))
+  (org-agenda))
+
+
 
 ;; WIP
 ;; (defun gh/org-roam-dailies-goto-next-note-or-tomorrow ()
