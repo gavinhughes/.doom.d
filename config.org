@@ -99,9 +99,10 @@
  ;;   C-M-<space>     Things quick capture
 
  ;; Undefine unused or reassigned chords
- :n  "O"         'undefined ;; evil-open-above
- :ni "C-d"       'undefined ;; evil-scroll-down
-     "M-d"       'undefined ;; kill-word
+ :n  "O"         'undefined ; evil-open-above
+ :ni "C-d"       'undefined ; evil-scroll-down
+     "M-d"       'undefined ; kill-word
+     "M-z"       'undefined ; zap-to-char. Using SPC d f /char/
 
 ;; Hypers – Get there quickly
 ;;   This might be better defined in their category locations than references
@@ -198,6 +199,9 @@
  :leader "t v"   'visual-fill-column-mode
  )
  #+end_src
+
+ #+RESULTS:
+ : visual-fill-column-mode
 
 * Org Mode
 ** Config
@@ -505,7 +509,7 @@ Also want to be able to open Numbers files, currently this dives into the bundle
 "#+TITLE: %<%Y-%m-%d>
 ,#+STARTUP: overview\n\n
 | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
-\* TODO ([[elisp:(gh/refreshed-org-agenda)][Agenda]])
+\* TODO [[elisp:(gh/refreshed-org-agenda)][Agenda]]
 \* TODO [[file:daily.org][Daily]]
 \* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
 "))))
