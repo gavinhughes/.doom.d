@@ -83,19 +83,18 @@
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
 (map!
- ;; DON'T USE. Assigned in MacOS:
- ;;   C-M-<return>    Magnet maximize window
- ;;   C-M-<space>     Things quick capture
-
  ;; Undefine unused or reassigned chords
- :n  "O"         'undefined ;; evil-open-above
- :ni "C-d"       'undefined ;; evil-scroll-down
-     "M-d"       'undefined ;; kill-word
+ :n  "O"         'undefined ; evil-open-above
+ :ni "C-d"       'undefined ; evil-scroll-down
+     "M-d"       'undefined ; kill-word
+     "M-z"       'undefined ; zap-to-char. Using SPC d f /char/
+     "s-:"       'undefined ; iSpell
+     )
 
-;; Hypers – Get there quickly
+(map!
 ;;   This might be better defined in their category locations than references
 ;;   with a master list in comments here.
-"H-a"         (cmd! (find-file "~/Desktop/stack.log"))
+;; "H-a"         (cmd! (find-file "~/Desktop/stack.log"))
 "H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
 "H-\\"        'toggle-theme
  "C-M-;"      'yank-from-kill-ring
@@ -215,7 +214,7 @@
                         (?C . (:foreground "dim grey")))
     org-todo-keyword-faces
     '(
-            ("DOING" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
+            ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
             ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
@@ -256,21 +255,23 @@
   "H-p"                'org-previous-visible-heading
   "H-r"                (cmd! (+org/refile-to-file nil "daily.org"))
   "H-R"                '+org/refile-to-file
-  "H-a"                'org-archive-subtree
+  ;; "H-a"                'org-archive-subtree
+  "H-a"                'gh/open-or-pop-to-org-agenda
   "C-<"                'org-do-promote
   "C->"                'org-do-demote
   ;; "s-."                'org-shiftright
   ;; "s->"                'org-shiftleft
-  "H-l"                "C-u C-u C-c C-x C-l" ;; Preview all latex
+  ;; Previously, "H-l"                "C-u C-u C-c C-x C-l" ;; Preview all latex
   "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
   "M-d"                'doom/delete-this-file
-  "H-o"  "C-c C-t o"
-    ;; Quickly get to DONE state
-  "s-d"  "C-c C-t d"
-    ;; Quickly get to DOING state
-    ;; This is anti-pattern but efficient
+
+  ;; Quickly get done Todo states
+  ;; This is anti-pattern but efficient
+  "H-j"  "C-c C-t d" ; DOING
+  "H-k"  "C-c C-t o" ; DONE
+  ;; "H-'"
 
   :niv "s-j"           'org-todo
 
@@ -415,19 +416,24 @@
                                             "* %?"
                                         :target (file+head
 "%<%Y-%m-%d>.org"
-"#+TITLE: %<%Y-%m-%d>
-#+STARTUP: overview\n\n
+"#+STARTUP: overview\n\n
+#+TITLE: %<%A, %-m/%-d/%y>
 | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
-\* TODO ([[elisp:(gh/refreshed-org-agenda)][Agenda]])
-\* TODO [[file:daily.org][Daily]]
+\* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
+\* TODO [[elisp:(gh/refreshed-org-agenda)][Agenda]]
+\* TODO [[shell:open -a Things3.app][Things]]
 \* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
 "))))
+
+(setq org-agenda-custom-commands
+      '(("h" . "Pending + Name tag searches") ; describe prefix "h"
+        ("hk" search "#pending")))
 
 (setq
    org-agenda-files (sort (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$") #'string>))
    org-agenda-window-setup 'reorganize-frame
    ;; (search category-keep)))
-   ;; org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
+   org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
    org-agenda-skip-deadline-if-done t
    org-agenda-skip-scheduled-if-done t
    org-agenda-skip-timestamp-if-done t

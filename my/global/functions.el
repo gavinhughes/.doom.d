@@ -94,6 +94,14 @@ end tell
         (concat org-roam-directory "/daily") "\\.org$") #'string>))
   (org-agenda))
 
+(defun gh/open-or-pop-to-agenda ()
+  "Open Agenda if created, otherwise create and open it."
+
+  (interactive)
+  (if (gnus-buffer-exists-p "*Org Agenda*")
+        (pop-to-buffer-same-window "*Org Agenda*")
+        (org-agenda)))
+
 
 
 ;; WIP
