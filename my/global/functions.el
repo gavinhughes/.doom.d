@@ -84,23 +84,31 @@ end tell
   (if (eq position (- (length dailies) 1))
       (org-roam-dailies-goto-tomorrow (length dailies))))
 
-(defun gh/refreshed-org-agenda ()
-  "Refresh org-agenda-files and then call org-agenda."
 
-  (interactive)
-  (setq org-agenda-files
-      (sort
-       (directory-files-recursively
-        (concat org-roam-directory "/daily") "\\.org$") #'string>))
-  (org-agenda))
+(defun gh/set-org-agenda-files ()
+  "My custom setq for org-agenda-files"
+
+    (setq
+     ;; org-agenda-files (sort (directory-files-recursively org-roam-directory "\\.org$") #'string>))
+     org-agenda-files (append
+                       (sort (directory-files-recursively (concat org-roam-directory "/pages") "\\.org$") #'string>)
+                       (sort (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$") #'string>)
+                       )))
+
+
+(defun gh/org-agenda-files-changed-p ()
+  (not (equal org-agenda-files (gh/set-org-agenda-files))))
+
 
 (defun gh/open-or-pop-to-agenda ()
   "Open Agenda if created, otherwise create and open it."
 
   (interactive)
-  (if (gnus-buffer-exists-p "*Org Agenda*")
-        (pop-to-buffer-same-window "*Org Agenda*")
-        (org-agenda)))
+  (if (gh/org-agenda-files-changed-p)
+      (org-agenda)
+      (if (gnus-buffer-exists-p "*Org Agenda*")
+         (pop-to-buffer-same-window "*Org Agenda*")
+         (org-agenda))))
 
 
 
