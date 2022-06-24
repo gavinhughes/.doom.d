@@ -92,24 +92,32 @@
 #+end_src
 
 * Global keymaps
+** Cords used in MacOS
+Don't use these.
 
-Don't use these cords. They're assigned in MacOS:
 #+begin_src
 C-M-<return>    Magnet maximize window
 C-M-<space>     Things quick capture
 #+end_src
 
+** Undefine chords
+Chords that are:
+1. Pre-defined but unused; or
+2. Reassigned and undefined explicitly for clarity or to prevent conflicts.
+
 #+begin_src emacs-lisp :tangle yes
 (map!
- ;; Undefine unused or reassigned chords
  :n  "O"         'undefined ; evil-open-above
  :ni "C-d"       'undefined ; evil-scroll-down
      "M-d"       'undefined ; kill-word
      "M-z"       'undefined ; zap-to-char. Using SPC d f /char/
      "s-:"       'undefined ; iSpell
+     "s-e"       'undefined ; isearch-yank-kill
+     "C-SPC"     'undefined ; set-mark-command
      )
 #+end_src
 
+** Global chords
 Hypers – Get there quickly
 #+begin_src emacs-lisp :tangle yes
 (map!
@@ -161,10 +169,11 @@ Hypers – Get there quickly
 
 ;; Workspaces.
 ;; :n assignment is in the package. Add :i.
-:ni "s-1"        '+workspace/switch-to-0
-:ni "s-2"        '+workspace/switch-to-1
-:ni "s-3"        '+workspace/switch-to-2
-:ni "s-4"        '+workspace/switch-to-3
+;; [2022-05-22 Sun] Just pulled out the :ni to make this work in the agenda. Any issues??
+ "s-1"        '+workspace/switch-to-0
+ "s-2"        '+workspace/switch-to-1
+ "s-3"        '+workspace/switch-to-2
+ "s-4"        '+workspace/switch-to-3
 
  ;; Other
  :ni "s-O"       'evil-open-above
@@ -208,9 +217,6 @@ Hypers – Get there quickly
  )
  #+end_src
 
- #+RESULTS:
- : visual-fill-column-mode
-
 * Org Mode
 ** Config
 #+begin_src emacs-lisp :tangle yes
@@ -253,6 +259,7 @@ Fonts
     org-todo-keyword-faces
     '(
             ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
+            ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
             ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
@@ -316,7 +323,7 @@ Fonts
   "H-k"  "C-c C-t o" ; DONE
   ;; "H-'"
 
-  :niv "s-j"           'org-todo
+  :niv "s-j"        'org-todo
 
   :leader "m m S"   'gh/yank-safari-front-url
   :leader "m m s"   'gh/org-insert-safari-front-link
@@ -489,6 +496,7 @@ Also want to be able to open Numbers files, currently this dives into the bundle
         "[ ](c)"
         "|"
         "DOING(d)"
+        "ASSIGNED(s)"
         "DONE(o)"
         "[X](x)"
         "CANCELLED(l)"
@@ -516,42 +524,45 @@ Also want to be able to open Numbers files, currently this dives into the bundle
                                             "* %?"
                                         :target (file+head
 "%<%Y-%m-%d>.org"
-"#+STARTUP: overview\n\n
-#+TITLE: %<%A, %-m/%-d/%y>
-| [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
-\* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
-\* TODO [[elisp:(gh/refreshed-org-agenda)][Agenda]]
-\* TODO [[shell:open -a Things3.app][Things]]
-\* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-"))))
+"#+TITLE: %<%A, %-m/%-d/%y>
+#+STARTUP: overview\n\n
+")))) ; On vacsation don't look at work.
+;; | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+;; \* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
+;; \* TODO [[elisp:(gh/open-or-pop-to-agenda)][Agenda]]
+;; \* TODO [[shell:open -a Things3.app][Things]]
+;; \* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
 #+end_src
-
-#+RESULTS:
-| d | default | entry | * %? | :target | (file+head %<%Y-%m-%d>.org #+TITLE: %<%Y-%m-%d> |
 
 ** Agenda
 Simpler way of doing recursive search of org files:
 https://stackoverflow.com/a/41969519/173162
+
+
+[2022-05-23 Mon]
+    Add the =People= directory to capture all assigned there along with agenda?
+    In 1/1s, you really want to pull up the entire file, not just #personname tag.  The file should have other items of importance to discuss.
+
+Files to include in agenda are set in =my/global/functions.el=. Currently only =./pages= and =./daily=.
 
 #+begin_src emacs-lisp :tangle yes
 (setq org-agenda-custom-commands
       '(("h" . "Pending + Name tag searches") ; describe prefix "h"
         ("hk" search "#pending")))
 
-(setq
-   org-agenda-files (sort (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$") #'string>))
-   org-agenda-window-setup 'reorganize-frame
-   ;; (search category-keep)))
-   org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
-   org-agenda-skip-deadline-if-done t
-   org-agenda-skip-scheduled-if-done t
-   org-agenda-skip-timestamp-if-done t
-   org-agenda-start-on-weekday 0
-   org-agenda-custom-commands
-       '(("d" "Today's Tasks"
-          ((agenda "" ((org-agenda-span 1)
-         	      (org-agenda-overriding-header "Today's Tasks")))))
-   org-agenda-custom-commands)
+;; (setq
+    ;; org-agenda-window-setup 'reorganize-frame
+    ;; ;; (search category-keep)
+    ;; org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
+    ;; org-agenda-skip-deadline-if-done t
+    ;; org-agenda-skip-scheduled-if-done t
+    ;; org-agenda-skip-timestamp-if-done t
+    ;; org-agenda-start-on-weekday 0
+    ;; org-agenda-custom-commands
+    ;;     '(("d" "Today's Tasks"
+    ;;         ((agenda "" ((org-agenda-span 1)
+    ;;                 (org-agenda-overriding-header "Today's Tasks")))))
+    ;; org-agenda-custom-commands))
 #+end_src
 * Other Modes
 ** Haskell
