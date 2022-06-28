@@ -114,6 +114,9 @@ Chords that are:
      "s-:"       'undefined ; iSpell
      "s-e"       'undefined ; isearch-yank-kill
      "C-SPC"     'undefined ; set-mark-command
+
+ :leader ":"     'undefined ; M-x
+ :leader "."     'undefined ; counsel-find-file. SPC ff
      )
 #+end_src
 
@@ -517,7 +520,7 @@ Also want to be able to open Numbers files, currently this dives into the bundle
 
       org-roam-capture-templates '(("d" "default" plain "%?"
                                       :target (file+head "${slug}.org"
-                                                         "#+TITLE:   ${title}\n#+STARTUP: show2levels\n–")
+                                                         "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
                                       :unnarrowed t))
       org-roam-dailies-directory "daily"
       org-roam-dailies-capture-templates '(("d" "default" entry
@@ -526,13 +529,15 @@ Also want to be able to open Numbers files, currently this dives into the bundle
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview\n\n
-")))) ; On vacsation don't look at work.
-;; | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
-;; \* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
-;; \* TODO [[elisp:(gh/open-or-pop-to-agenda)][Agenda]]
-;; \* TODO [[shell:open -a Things3.app][Things]]
-;; \* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+\* TODO [[elisp:(gh/open-or-pop-to-agenda)][Agenda]]
+"))))
 #+end_src
+Removed while on vacation:
+| [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+\* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+\* TODO [[shell:open -a Things3.app][Things]]
+\* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
+
 
 ** Agenda
 Simpler way of doing recursive search of org files:
