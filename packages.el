@@ -11,11 +11,11 @@
   ;; Dependencies: pngpaste
 (package! csv-mode)
 (package! osx-dictionary)
-(package! dired+)
+;; (package! dired+)
   ;; To reuse the same buffer when navigating the dir tree
   ;; TODO Not yet implemented
 (package! lorem-ipsum)
-(package! exec-path-from-shell)
+;; (package! exec-path-from-shell)
 (package! reveal-in-osx-finder)
 (package! auto-compile)
 (package! dired-narrow)
@@ -44,6 +44,8 @@
 (package! powerthesaurus)
 (package! org-mac-link)
 (package! org-logseq :recipe (:host github :repo "llcc/org-logseq"))
+
+;;(package! hyperbole)
 
 ;;;; Not currently used:
 ;; (package! org-anki)

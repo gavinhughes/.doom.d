@@ -1,7 +1,7 @@
 #+title: Config
 #+startup: overview
 
-* TODO
+* Todo
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
 
 * Startup and load
@@ -220,14 +220,31 @@ Hypers – Get there quickly
  )
  #+end_src
 
+
+*  Appearance
+#+begin_src emacs-lisp :tangle yes
+(defvar dark-theme  'doom-one)
+(defvar light-theme 'doom-one-light)
+(defun toggle-theme ()
+  "Toggle between my light and dark themes."
+  (interactive)
+  (if (eq (car custom-enabled-themes) dark-theme)
+      (load-theme light-theme)
+    (load-theme dark-theme)))
+#+end_src
+:NOTES:
+You could also try setting when the system inverts colors. This would get you started but needs to be changed for invert, not mode:
+https://www.reddit.com/r/emacs/comments/hejsqm/is_there_a_way_to_detect_lightdark_mode_on_mac/
+:END:
 * Org Mode
 ** Config
-#+begin_src emacs-lisp :tangle yes
-;; https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages
-;; Better way to load using packages.el?
-;; (add-load-path! "my/org-mode")
-;; (require 'org-mac-link)
+Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
+#+begin_src emacs-lisp :tangle no
+(add-load-path! "my/org-mode")
+(require 'org-mac-link)
+#+end_src
 
+#+begin_src emacs-lisp :tangle yes
 (setq
   org-directory "~/iCloud/OrgNotes/"
   org-archive-location "archive.org::* From %s"
@@ -395,13 +412,11 @@ Roam keys that only make sense in a roam buffer.
 #+end_src
 
 ** More
-#+begin_src emacs-lisp :tangle yes
-
-
 ;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
 ;; Installed. How to use it? [2021-12-13 Mon]
 ;; (require 'org-roam-protocol)
 
+#+begin_src emacs-lisp :tangle yes
 (use-package! org-mac-link
   ;; Current version of Outlook doesn't support direct links to messages.
     :after org
@@ -432,7 +447,6 @@ Roam keys that only make sense in a roam buffer.
 
 ** Literate config
 The Doom +literate module will tangle automatically on save. Need to turn this off because:
-
 1. My org is configured to autosave to avoid losing work when using Roam with Logseq;
 2. Tangle on autosave will often result in config.el in a broken state during config.org edits.
 
@@ -529,15 +543,14 @@ Also want to be able to open Numbers files, currently this dives into the bundle
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview\n\n
-\* TODO [[elisp:(gh/open-or-pop-to-agenda)][Agenda]]
-"))))
-#+end_src
-Removed while on vacation:
 | [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+\* #journal
+\* TODO [[elisp:(gh/open-or-pop-to-agenda)][Agenda]]
 \* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
 \* TODO [[shell:open -a Things3.app][Things]]
 \* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
-
+"))))
+#+end_src
 
 ** Agenda
 Simpler way of doing recursive search of org files:
@@ -548,7 +561,24 @@ https://stackoverflow.com/a/41969519/173162
     Add the =People= directory to capture all assigned there along with agenda?
     In 1/1s, you really want to pull up the entire file, not just #personname tag.  The file should have other items of importance to discuss.
 
-Files to include in agenda are set in =my/global/functions.el=. Currently only =./pages= and =./daily=.
+To include all org files. =OFF=
+#+begin_src emacs-lisp :tangle no
+(defun gh/set-org-agenda-files ()
+  "Custom setq for org-agenda-files"
+     (setq
+       org-agenda-files (sort (gh/agenda-file-filter (directory-files-recursively org-roam-directory "\\.org$")) #'string>)))
+#+end_src
+
+To include only specified directories. =ON=
+#+begin_src emacs-lisp :tangle yes
+(defun gh/set-org-agenda-files ()
+  "Custom setq for org-agenda-files"
+     (setq org-agenda-files "")
+     (setq org-agenda-files (append
+                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/pages") "\\.org$")) #'string>)
+                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$")) #'string>)
+                       )))
+#+end_src
 
 #+begin_src emacs-lisp :tangle yes
 (setq org-agenda-custom-commands
@@ -634,8 +664,8 @@ Files to include in agenda are set in =my/global/functions.el=. Currently only =
 #+end_src
 
 * Experiment
+https://github.com/hlissner/doom-emacs/issues/581
 #+begin_src emacs-lisp :tangle yes
-;; https://github.com/hlissner/doom-emacs/issues/581
 (defun dlukes/ediff-doom-config (file)
   "ediff the current config with the examples in doom-emacs-dir
 
@@ -654,6 +684,4 @@ diff.
              template-file-regex
              nil
              (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
-
-
 #+end_src

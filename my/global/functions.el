@@ -19,18 +19,6 @@
      (error "Canceled")))
   (ps-print-buffer))
 
-;; You could also try setting when the system inverts colors. This would get you started
-;; but needs to be changed for invert, not mode:
-;; https://www.reddit.com/r/emacs/comments/hejsqm/is_there_a_way_to_detect_lightdark_mode_on_mac/
-(defun toggle-theme ()
-  "Toggle between light and dark themes"
-
-  (interactive)
-  (setq dark-theme  'doom-one
-        light-theme 'doom-one-light)
-  (if (eq (car custom-enabled-themes) dark-theme)
-      (load-theme light-theme)
-    (load-theme dark-theme)))
 
 (defun gh/relative-name-nondirectory (path level)
   "Return the filename of the directory LEVEL above the end of path.
@@ -85,14 +73,26 @@ end tell
       (org-roam-dailies-goto-tomorrow (length dailies))))
 
 
-(defun gh/set-org-agenda-files ()
-  "My custom setq for org-agenda-files"
+(defun gh/agenda-file-filter (file-names)
+  "Filter out unwanted files from org agenda."
+  (seq-filter (lambda(x) (and
+      (not (string-match "/logseq/"(file-name-directory x)))
+      (not (string-match "/bak/"(file-name-directory x)))
+      (not (string-match "archive"(file-name-directory x))) ; Excludes archive.org
+    )) file-names))
 
-    (setq
-     ;; org-agenda-files (sort (directory-files-recursively org-roam-directory "\\.org$") #'string>))
-     org-agenda-files (append
-                       (sort (directory-files-recursively (concat org-roam-directory "/pages") "\\.org$") #'string>)
-                       (sort (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$") #'string>)
+
+(defun gh/set-org-agenda-files ()
+  "Custom setq for org-agenda-files"
+     ;; Use this to include all org files:
+     ;; (setq
+     ;;   org-agenda-files (sort (gh/agenda-file-filter (directory-files-recursively org-roam-directory "\\.org$")) #'string>)))
+     ;;
+     ;; Use this to include all org files:
+     (setq org-agenda-files "")
+     (setq org-agenda-files (append
+                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/pages") "\\.org$")) #'string>)
+                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$")) #'string>)
                        )))
 
 
