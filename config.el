@@ -15,6 +15,10 @@
 
 (load! "my/global/functions.el")
 
+;; Run programs in the Emacs buffer holding their source, seeing their output inline, interactively.
+;; Better approach to loading?
+(load! "~/.doom.d/modules/halp.el")
+
 ;; Use word wrap in all buffers that minor mode message-mode.
 ;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
 (remove-hook 'text-mode-hook #'auto-fill-mode)
@@ -82,14 +86,76 @@
 ;; Maximize frame at startup.
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
+(defun gh/clone-indirect-buffer-vertically ()
+  (interactive)
+  (clone-indirect-buffer nil 1)
+  (+evil/window-move-right))
+
+(defvar dark-theme  'doom-one)
+(defvar light-theme 'doom-one-light)
+(defun toggle-theme ()
+  "Toggle between my light and dark themes."
+  (interactive)
+  (if (eq (car custom-enabled-themes) dark-theme)
+      (load-theme light-theme)
+    (load-theme dark-theme)))
+
+(defun gh/org-time-stamp-inactive ()
+  (interactive)
+  (org-insert-time-stamp (current-time) nil 1))
+
+(defun gh/org-open-journal ()
+  (interactive)
+  (org-roam-dailies-goto-today)
+  (evil-goto-first-line)
+  (search-forward "* #journal")
+  (org-tree-to-indirect-buffer)
+  (evil-goto-line)
+  )
+
+(setq org-agenda-custom-commands
+      '(("h" . "Pending + Name tag searches") ; describe prefix "h"
+        ("hk" search "#pending")))
+
+;; (setq
+    ;; org-agenda-window-setup 'reorganize-frame
+    ;; ;; (search category-keep)
+    ;; org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
+    ;; org-agenda-skip-deadline-if-done t
+    ;; org-agenda-skip-scheduled-if-done t
+    ;; org-agenda-skip-timestamp-if-done t
+    ;; org-agenda-start-on-weekday 0
+    ;; org-agenda-custom-commands
+    ;;     '(("d" "Today's Tasks"
+    ;;         ((agenda "" ((org-agenda-span 1)
+    ;;                 (org-agenda-overriding-header "Today's Tasks")))))
+    ;; org-agenda-custom-commands))
+
+(defun gh/ledger-insert-date ()
+  (interactive)
+  (insert (format-time-string "%Y/%m/%d")))
+
 (map!
- ;; Undefine unused or reassigned chords
  :n  "O"         'undefined ; evil-open-above
  :ni "C-d"       'undefined ; evil-scroll-down
      "M-d"       'undefined ; kill-word
      "M-z"       'undefined ; zap-to-char. Using SPC d f /char/
      "s-:"       'undefined ; iSpell
-     )
+     "s-e"       'undefined ; isearch-yank-kill
+     "C-SPC"     'undefined ; set-mark-command
+
+     ; Using undo-fu package mapped for Mac consistency to to s-z and S-s-z.
+     "C-/"       'undefined ; undo-fu-only-undo. When would I need this?
+     "C-?"       'undefined ; undo-fu-only-redo. When would I need this?
+                            ; This is assigned thru Maestro as "Open Recent"
+
+ :leader ":"     'undefined ; M-x
+ :leader "."     'undefined ; counsel-find-file. SPC ff
+ :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
+ :leader "X"     'undefined
+ :leader "b N"   'undefined
+ :leader "u"     'undefined ;; Universal argument
+ )
 
 (map!
 ;;   This might be better defined in their category locations than references
@@ -97,7 +163,9 @@
 ;; "H-a"         (cmd! (find-file "~/Desktop/stack.log"))
 "H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
 "H-\\"        'toggle-theme
- "C-M-;"      'yank-from-kill-ring
+"C-M-;"      'yank-from-kill-ring
+"H-y"        'doom/delete-this-file
+"H-j"        'gh/org-open-journal
 
  ;; Movement
  :n "$"                  'end-of-visual-line
@@ -126,7 +194,6 @@
  "s-,"            'ivy-switch-buffer
  "M-s-]"          'next-buffer
  "M-s-["          'previous-buffer
- "C-c c"          'clone-indirect-buffer
  "s-p"            'ps-print-buffer-with-confirmation
  "s-;"            'org-roam-node-find
  "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
@@ -140,10 +207,11 @@
 
 ;; Workspaces.
 ;; :n assignment is in the package. Add :i.
-:ni "s-1"        '+workspace/switch-to-0
-:ni "s-2"        '+workspace/switch-to-1
-:ni "s-3"        '+workspace/switch-to-2
-:ni "s-4"        '+workspace/switch-to-3
+;; [2022-05-22 Sun] Just pulled out the :ni to make this work in the agenda. Any issues??
+ "s-1"        '+workspace/switch-to-0
+ "s-2"        '+workspace/switch-to-1
+ "s-3"        '+workspace/switch-to-2
+ "s-4"        '+workspace/switch-to-3
 
  ;; Other
  :ni "s-O"       'evil-open-above
@@ -159,21 +227,15 @@
 ;; Make `$` behave same as in :normal.
  :v  "$"         (cmd! (evil-end-of-line) (evil-backward-char) (evil-forward-char))
 
-
- ;; Undefine unused or reassigned chords
- :leader "X"     'undefined
- :leader "b N"   'undefined
- :leader "u"     'undefined ;; Universal argument
-
  ;; Leaders – place last, otherwise errors.
- :leader "a d"   (cmd! (org-insert-time-stamp (current-time) nil 1))
-   ;; Change this to a function: 'org-time-stamp-inactive
  :leader "f m"   'doom/move-this-file
  :leader "b n"   'rename-buffer
+ :leader "b c"   'gh/clone-indirect-buffer-vertically
  :leader "j d"   'dired-jump
  :leader "<"     '+ivy/switch-workspace-buffer
  :leader ","     'ivy-switch-buffer
  :leader "SPC"   '+ivy/projectile-find-file
+ :leader "f d"   'doom/delete-this-file
 
 ;; Git
  :leader "g f d"   'magit-diff-buffer-file
@@ -185,11 +247,6 @@
  ;; `t` Toggle
  :leader "t v"   'visual-fill-column-mode
  )
-
-;; https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages
-;; Better way to load using packages.el?
-;; (add-load-path! "my/org-mode")
-;; (require 'org-mac-link)
 
 (setq
   org-directory "~/iCloud/OrgNotes/"
@@ -215,6 +272,7 @@
     org-todo-keyword-faces
     '(
             ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
+            ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
             ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
@@ -241,6 +299,7 @@
   '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
 
 (map! :map org-mode-map
+  :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
   :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
   :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
@@ -256,7 +315,7 @@
   "H-r"                (cmd! (+org/refile-to-file nil "daily.org"))
   "H-R"                '+org/refile-to-file
   ;; "H-a"                'org-archive-subtree
-  "H-a"                'gh/open-or-pop-to-org-agenda
+  "H-a"                'gh/open-or-pop-to-agenda
   "C-<"                'org-do-promote
   "C->"                'org-do-demote
   ;; "s-."                'org-shiftright
@@ -265,19 +324,22 @@
   "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
-  "M-d"                'doom/delete-this-file
 
   ;; Quickly get done Todo states
   ;; This is anti-pattern but efficient
-  "H-j"  "C-c C-t d" ; DOING
+  "H-l"  "C-c C-t d" ; DOING
   "H-k"  "C-c C-t o" ; DONE
   ;; "H-'"
 
-  :niv "s-j"           'org-todo
+  :niv "s-j"        'org-todo
 
+  :leader "i d"     'gh/org-time-stamp-inactive
   :leader "m m S"   'gh/yank-safari-front-url
   :leader "m m s"   'gh/org-insert-safari-front-link
-)
+
+  ;; :leader "a a"   'gh/set-org-agenda-all-files
+  ;; :leader "a c"   'gh/set-org-agenda-crowley-files
+  )
 
 (map!
     "H-,"         'org-roam-dailies-goto-today
@@ -317,10 +379,6 @@
     ;; Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
  )
 
-;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
-;; Installed. How to use it? [2021-12-13 Mon]
-;; (require 'org-roam-protocol)
-
 (use-package! org-mac-link
   ;; Current version of Outlook doesn't support direct links to messages.
     :after org
@@ -350,31 +408,17 @@
 
 (remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
 
-;; BROKEN
-;; For export to .md, .doc, etc.
-;; https://github.com/tecosaur/org-pandoc-import
-;; (use-package! org-pandoc-import :after org)
-
-;; https://github.com/abo-abo/org-download/blob/master/org-download.el
 (require 'org-download)
-  ;; org-download is not great. Using the 'attach method, files are
-  ;; inserted in the org-attach-id directory under the file property.
-  ;; Limitations:
-  ;; - Images will not insert unlist under a heading.
 (after! org
   (setq
-    ;; https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
     org-download-method 'attach
     org-download-timestamp "%Y%m%d-%H%M%S_"
     org-image-actual-width 300
-    org-download-delete-image-after-download 1
-      ;; Delete temp image after download
+    org-download-delete-image-after-download 1 ; Delete temp image after download
     org-download-screenshot-method "/opt/homebrew/bin/pngpaste %s"
-    org-download-annotate-function #'gh/dont-annotate)
-      ;; Don't insert any property info above the link.
+    org-download-annotate-function #'gh/dont-annotate) ; Don't insert any property info above the link.
   )
 (defun gh/dont-annotate (link) "")
-
 
 (add-hook 'org-mode-hook #'org-appear-mode)
 (after! org
@@ -392,6 +436,7 @@
         "[ ](c)"
         "|"
         "DOING(d)"
+        "ASSIGNED(s)"
         "DONE(o)"
         "[X](x)"
         "CANCELLED(l)"
@@ -409,40 +454,18 @@
 
       org-roam-capture-templates '(("d" "default" plain "%?"
                                       :target (file+head "${slug}.org"
-                                                         "#+TITLE:   ${title}\n#+STARTUP: show2levels\n–")
+                                                         "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
                                       :unnarrowed t))
       org-roam-dailies-directory "daily"
       org-roam-dailies-capture-templates '(("d" "default" entry
                                             "* %?"
                                         :target (file+head
 "%<%Y-%m-%d>.org"
-"#+STARTUP: overview\n\n
-#+TITLE: %<%A, %-m/%-d/%y>
-| [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
-\* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
-\* TODO [[elisp:(gh/refreshed-org-agenda)][Agenda]]
-\* TODO [[shell:open -a Things3.app][Things]]
-\* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+"#+TITLE: %<%A, %-m/%-d/%y>
+#+STARTUP: overview
+| [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]] | [[elisp:(gh/open-or-pop-to-agenda)][Agenda]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+
 "))))
-
-(setq org-agenda-custom-commands
-      '(("h" . "Pending + Name tag searches") ; describe prefix "h"
-        ("hk" search "#pending")))
-
-(setq
-   org-agenda-files (sort (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$") #'string>))
-   org-agenda-window-setup 'reorganize-frame
-   ;; (search category-keep)))
-   org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
-   org-agenda-skip-deadline-if-done t
-   org-agenda-skip-scheduled-if-done t
-   org-agenda-skip-timestamp-if-done t
-   org-agenda-start-on-weekday 0
-   org-agenda-custom-commands
-       '(("d" "Today's Tasks"
-          ((agenda "" ((org-agenda-span 1)
-         	      (org-agenda-overriding-header "Today's Tasks")))))
-   org-agenda-custom-commands)
 
 (map! :map haskell-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
@@ -459,6 +482,8 @@
 (map! :map markdown-mode-map
     ;; Make m-dash behavior consistent with Mac.
     "M--" 'undefine
+
+    "M-s-<return>"  'markdown-insert-list-item
  :i "M--" "–"
 ;; Errors on markdown-insert-list-item
 ;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
@@ -476,31 +501,6 @@
         ;; "<s-mouse-1>" 'my-eww-open-in-new-window
   )
 
-(defun gh/ledger-insert-date ()
-  (interactive)
-  (insert (format-time-string "%Y/%m/%d"))
-  )
-
 (map! :map ledger-mode-map
       "C-c C-l" 'ledger-mode-clean-buffer
       "C-c C-i" 'gh/ledger-insert-date)
-
-;; https://github.com/hlissner/doom-emacs/issues/581
-(defun dlukes/ediff-doom-config (file)
-  "ediff the current config with the examples in doom-emacs-dir
-
-There are multiple config files, so FILE specifies which one to
-diff.
-"
-  (interactive
-    (list (read-file-name "Config file to diff: " doom-private-dir)))
-  (let* ((stem (file-name-base file))
-          (customized-file (format "%s.el" stem))
-          (template-file-regex (format "^%s.example.el$" stem)))
-    (ediff-files
-      (concat doom-private-dir customized-file)
-      (car (directory-files-recursively
-             doom-emacs-dir
-             template-file-regex
-             nil
-             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))

@@ -3,7 +3,6 @@
 
 * Todo
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
-
 * Startup and load
 #+begin_src emacs-lisp :tangle yes
 ;;; config.el -*- lexical-binding: t; -*-
@@ -22,6 +21,10 @@
 ;; (add-load-path! "modules")
 
 (load! "my/global/functions.el")
+
+;; Run programs in the Emacs buffer holding their source, seeing their output inline, interactively.
+;; Better approach to loading?
+(load! "~/.doom.d/modules/halp.el")
 
 ;; Use word wrap in all buffers that minor mode message-mode.
 ;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
@@ -91,10 +94,126 @@
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 #+end_src
 
+* My functions
+** Buffers
+#+begin_src emacs-lisp :tangle yes
+(defun gh/clone-indirect-buffer-vertically ()
+  (interactive)
+  (clone-indirect-buffer nil 1)
+  (+evil/window-move-right))
+#+end_src
+** Toggle theme
+#+begin_src emacs-lisp :tangle yes
+(defvar dark-theme  'doom-one)
+(defvar light-theme 'doom-one-light)
+(defun toggle-theme ()
+  "Toggle between my light and dark themes."
+  (interactive)
+  (if (eq (car custom-enabled-themes) dark-theme)
+      (load-theme light-theme)
+    (load-theme dark-theme)))
+#+end_src
+:NOTES:
+You could also try setting when the system inverts colors. This would get you started but needs to be changed for invert, not mode:
+https://www.reddit.com/r/emacs/comments/hejsqm/is_there_a_way_to_detect_lightdark_mode_on_mac/
+:END:
+** Org
+#+begin_src emacs-lisp :tangle yes
+(defun gh/org-time-stamp-inactive ()
+  (interactive)
+  (org-insert-time-stamp (current-time) nil 1))
+#+end_src
+** Org Roam
+#+begin_src emacs-lisp :tangle yes
+(defun gh/org-open-journal ()
+  (interactive)
+  (org-roam-dailies-goto-today)
+  (evil-goto-first-line)
+  (search-forward "* #journal")
+  (org-tree-to-indirect-buffer)
+  (evil-goto-line)
+  )
+#+end_src
+** Agenda
+Simpler way of doing recursive search of org files:
+https://stackoverflow.com/a/41969519/173162
+
+
+[2022-05-23 Mon]
+    Add the =People= directory to capture all assigned there along with agenda?
+    In 1/1s, you really want to pull up the entire file, not just #personname tag.  The file should have other items of importance to discuss.
+
+#+begin_src emacs-lisp :tangle no
+(defun gh/set-org-agenda-all-files ()
+  "Include all org files in org-agenda-files"
+  (interactive)
+     (setq org-agenda-files "")
+     (setq
+       org-agenda-files (sort (gh/agenda-file-filter (directory-files-recursively org-roam-directory "\\.org$")) #'string>)))
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(defun gh/set-org-agenda-crowley-files ()
+  "Include only Crowley files in org-agenda-files"
+  (interactive)
+     (setq org-agenda-files "")
+     (setq org-agenda-files (append
+                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/pages") "\\.org$")) #'string>)
+                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$")) #'string>)
+                       )))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(setq org-agenda-custom-commands
+      '(("h" . "Pending + Name tag searches") ; describe prefix "h"
+        ("hk" search "#pending")))
+
+;; (setq
+    ;; org-agenda-window-setup 'reorganize-frame
+    ;; ;; (search category-keep)
+    ;; org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
+    ;; org-agenda-skip-deadline-if-done t
+    ;; org-agenda-skip-scheduled-if-done t
+    ;; org-agenda-skip-timestamp-if-done t
+    ;; org-agenda-start-on-weekday 0
+    ;; org-agenda-custom-commands
+    ;;     '(("d" "Today's Tasks"
+    ;;         ((agenda "" ((org-agenda-span 1)
+    ;;                 (org-agenda-overriding-header "Today's Tasks")))))
+    ;; org-agenda-custom-commands))
+#+end_src
+** Ledger
+#+begin_src emacs-lisp :tangle yes
+(defun gh/ledger-insert-date ()
+  (interactive)
+  (insert (format-time-string "%Y/%m/%d")))
+#+end_src
+** Experimental
+https://github.com/hlissner/doom-emacs/issues/581
+#+begin_src emacs-lisp :tangle no
+(defun dlukes/ediff-doom-config (file)
+  "ediff the current config with the examples in doom-emacs-dir
+
+There are multiple config files, so FILE specifies which one to
+diff.
+"
+  (interactive
+    (list (read-file-name "Config file to diff: " doom-private-dir)))
+  (let* ((stem (file-name-base file))
+          (customized-file (format "%s.el" stem))
+          (template-file-regex (format "^%s.example.el$" stem)))
+    (ediff-files
+      (concat doom-private-dir customized-file)
+      (car (directory-files-recursively
+             doom-emacs-dir
+             template-file-regex
+             nil
+             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
+#+end_src
+
 * Global keymaps
 ** Cords used in MacOS
 Don't use these.
-
 #+begin_src
 C-M-<return>    Magnet maximize window
 C-M-<space>     Things quick capture
@@ -115,13 +234,28 @@ Chords that are:
      "s-e"       'undefined ; isearch-yank-kill
      "C-SPC"     'undefined ; set-mark-command
 
+     ; Using undo-fu package mapped for Mac consistency to to s-z and S-s-z.
+     "C-/"       'undefined ; undo-fu-only-undo. When would I need this?
+     "C-?"       'undefined ; undo-fu-only-redo. When would I need this?
+                            ; This is assigned thru Maestro as "Open Recent"
+
  :leader ":"     'undefined ; M-x
  :leader "."     'undefined ; counsel-find-file. SPC ff
-     )
+ :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
+ :leader "X"     'undefined
+ :leader "b N"   'undefined
+ :leader "u"     'undefined ;; Universal argument
+ )
+#+end_src
+
+*** Items I'd like to add but have failed to get working.
+Already have =C-a= for this. Return =C-h= to the vanilla help leader.
+#+begin_src emacs-lisp :tangle no
+ :i  "C-h"       'undefined ; org-beginning-of-line.
 #+end_src
 
 ** Global chords
-Hypers – Get there quickly
+Hyper key to get there quickly.
 #+begin_src emacs-lisp :tangle yes
 (map!
 ;;   This might be better defined in their category locations than references
@@ -129,7 +263,9 @@ Hypers – Get there quickly
 ;; "H-a"         (cmd! (find-file "~/Desktop/stack.log"))
 "H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
 "H-\\"        'toggle-theme
- "C-M-;"      'yank-from-kill-ring
+"C-M-;"      'yank-from-kill-ring
+"H-y"        'doom/delete-this-file
+"H-j"        'gh/org-open-journal
 
  ;; Movement
  :n "$"                  'end-of-visual-line
@@ -158,7 +294,6 @@ Hypers – Get there quickly
  "s-,"            'ivy-switch-buffer
  "M-s-]"          'next-buffer
  "M-s-["          'previous-buffer
- "C-c c"          'clone-indirect-buffer
  "s-p"            'ps-print-buffer-with-confirmation
  "s-;"            'org-roam-node-find
  "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
@@ -192,21 +327,15 @@ Hypers – Get there quickly
 ;; Make `$` behave same as in :normal.
  :v  "$"         (cmd! (evil-end-of-line) (evil-backward-char) (evil-forward-char))
 
-
- ;; Undefine unused or reassigned chords
- :leader "X"     'undefined
- :leader "b N"   'undefined
- :leader "u"     'undefined ;; Universal argument
-
  ;; Leaders – place last, otherwise errors.
- :leader "a d"   (cmd! (org-insert-time-stamp (current-time) nil 1))
-   ;; Change this to a function: 'org-time-stamp-inactive
  :leader "f m"   'doom/move-this-file
  :leader "b n"   'rename-buffer
+ :leader "b c"   'gh/clone-indirect-buffer-vertically
  :leader "j d"   'dired-jump
  :leader "<"     '+ivy/switch-workspace-buffer
  :leader ","     'ivy-switch-buffer
  :leader "SPC"   '+ivy/projectile-find-file
+ :leader "f d"   'doom/delete-this-file
 
 ;; Git
  :leader "g f d"   'magit-diff-buffer-file
@@ -221,21 +350,6 @@ Hypers – Get there quickly
  #+end_src
 
 
-*  Appearance
-#+begin_src emacs-lisp :tangle yes
-(defvar dark-theme  'doom-one)
-(defvar light-theme 'doom-one-light)
-(defun toggle-theme ()
-  "Toggle between my light and dark themes."
-  (interactive)
-  (if (eq (car custom-enabled-themes) dark-theme)
-      (load-theme light-theme)
-    (load-theme dark-theme)))
-#+end_src
-:NOTES:
-You could also try setting when the system inverts colors. This would get you started but needs to be changed for invert, not mode:
-https://www.reddit.com/r/emacs/comments/hejsqm/is_there_a_way_to_detect_lightdark_mode_on_mac/
-:END:
 * Org Mode
 ** Config
 Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
@@ -311,6 +425,7 @@ Fonts
 ** Keymaps
 #+begin_src emacs-lisp :tangle yes
 (map! :map org-mode-map
+  :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
   :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
   :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
@@ -335,19 +450,22 @@ Fonts
   "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
-  "M-d"                'doom/delete-this-file
 
   ;; Quickly get done Todo states
   ;; This is anti-pattern but efficient
-  "H-j"  "C-c C-t d" ; DOING
+  "H-l"  "C-c C-t d" ; DOING
   "H-k"  "C-c C-t o" ; DONE
   ;; "H-'"
 
   :niv "s-j"        'org-todo
 
+  :leader "i d"     'gh/org-time-stamp-inactive
   :leader "m m S"   'gh/yank-safari-front-url
   :leader "m m s"   'gh/org-insert-safari-front-link
-)
+
+  ;; :leader "a a"   'gh/set-org-agenda-all-files
+  ;; :leader "a c"   'gh/set-org-agenda-crowley-files
+  )
 #+end_src
 
 Roam keys that make sense in anywhere.
@@ -469,34 +587,35 @@ Also want to be able to open Numbers files, currently this dives into the bundle
 
 
 ** More org
-#+begin_src emacs-lisp :tangle yes
-
-;; BROKEN
 ;; For export to .md, .doc, etc.
 ;; https://github.com/tecosaur/org-pandoc-import
 ;; (use-package! org-pandoc-import :after org)
 
-;; https://github.com/abo-abo/org-download/blob/master/org-download.el
+** org-download
+ org-download is not great.
+https://github.com/abo-abo/org-download/blob/master/org-download.el
+
+Good guide:
+https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
+ Using the 'attach method, files are inserted in the org-attach-id directory under the file property.
+ Limitations:
+ - Images will not insert unless under a heading.
+#+begin_src emacs-lisp :tangle yes
 (require 'org-download)
-  ;; org-download is not great. Using the 'attach method, files are
-  ;; inserted in the org-attach-id directory under the file property.
-  ;; Limitations:
-  ;; - Images will not insert unlist under a heading.
 (after! org
   (setq
-    ;; https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
     org-download-method 'attach
     org-download-timestamp "%Y%m%d-%H%M%S_"
     org-image-actual-width 300
-    org-download-delete-image-after-download 1
-      ;; Delete temp image after download
+    org-download-delete-image-after-download 1 ; Delete temp image after download
     org-download-screenshot-method "/opt/homebrew/bin/pngpaste %s"
-    org-download-annotate-function #'gh/dont-annotate)
-      ;; Don't insert any property info above the link.
+    org-download-annotate-function #'gh/dont-annotate) ; Don't insert any property info above the link.
   )
 (defun gh/dont-annotate (link) "")
+#+end_src
 
-
+** More
+#+begin_src emacs-lisp :tangle yes
 (add-hook 'org-mode-hook #'org-appear-mode)
 (after! org
   ;; (load-directory! "my/org-mode")
@@ -542,62 +661,10 @@ Also want to be able to open Numbers files, currently this dives into the bundle
                                         :target (file+head
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
-#+STARTUP: overview\n\n
-| [[id:87ce9404-65d5-4a75-a6ba-bb6e96f9d0ed][GSM]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
-\* #journal
-\* TODO [[elisp:(gh/open-or-pop-to-agenda)][Agenda]]
-\* TODO [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-\* TODO [[shell:open -a Things3.app][Things]]
-\* TODO [[id:22ccdc32-0532-4593-8fa6-17fcf9ea1088][Daily todos]]
+#+STARTUP: overview
+| [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]] | [[elisp:(gh/open-or-pop-to-agenda)][Agenda]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+
 "))))
-#+end_src
-
-** Agenda
-Simpler way of doing recursive search of org files:
-https://stackoverflow.com/a/41969519/173162
-
-
-[2022-05-23 Mon]
-    Add the =People= directory to capture all assigned there along with agenda?
-    In 1/1s, you really want to pull up the entire file, not just #personname tag.  The file should have other items of importance to discuss.
-
-To include all org files. =OFF=
-#+begin_src emacs-lisp :tangle no
-(defun gh/set-org-agenda-files ()
-  "Custom setq for org-agenda-files"
-     (setq
-       org-agenda-files (sort (gh/agenda-file-filter (directory-files-recursively org-roam-directory "\\.org$")) #'string>)))
-#+end_src
-
-To include only specified directories. =ON=
-#+begin_src emacs-lisp :tangle yes
-(defun gh/set-org-agenda-files ()
-  "Custom setq for org-agenda-files"
-     (setq org-agenda-files "")
-     (setq org-agenda-files (append
-                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/pages") "\\.org$")) #'string>)
-                       (sort (gh/agenda-file-filter (directory-files-recursively (concat org-roam-directory "/daily") "\\.org$")) #'string>)
-                       )))
-#+end_src
-
-#+begin_src emacs-lisp :tangle yes
-(setq org-agenda-custom-commands
-      '(("h" . "Pending + Name tag searches") ; describe prefix "h"
-        ("hk" search "#pending")))
-
-;; (setq
-    ;; org-agenda-window-setup 'reorganize-frame
-    ;; ;; (search category-keep)
-    ;; org-agenda-show-future-repeats 'next ;; Shows only the first future repeat.
-    ;; org-agenda-skip-deadline-if-done t
-    ;; org-agenda-skip-scheduled-if-done t
-    ;; org-agenda-skip-timestamp-if-done t
-    ;; org-agenda-start-on-weekday 0
-    ;; org-agenda-custom-commands
-    ;;     '(("d" "Today's Tasks"
-    ;;         ((agenda "" ((org-agenda-span 1)
-    ;;                 (org-agenda-overriding-header "Today's Tasks")))))
-    ;; org-agenda-custom-commands))
 #+end_src
 * Other Modes
 ** Haskell
@@ -623,6 +690,8 @@ To include only specified directories. =ON=
 (map! :map markdown-mode-map
     ;; Make m-dash behavior consistent with Mac.
     "M--" 'undefine
+
+    "M-s-<return>"  'markdown-insert-list-item
  :i "M--" "–"
 ;; Errors on markdown-insert-list-item
 ;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
@@ -646,11 +715,6 @@ To include only specified directories. =ON=
 #+end_src
 ** Ledger
 #+begin_src emacs-lisp :tangle yes
-(defun gh/ledger-insert-date ()
-  (interactive)
-  (insert (format-time-string "%Y/%m/%d"))
-  )
-
 (map! :map ledger-mode-map
       "C-c C-l" 'ledger-mode-clean-buffer
       "C-c C-i" 'gh/ledger-insert-date)
@@ -663,25 +727,3 @@ To include only specified directories. =ON=
   )
 #+end_src
 
-* Experiment
-https://github.com/hlissner/doom-emacs/issues/581
-#+begin_src emacs-lisp :tangle yes
-(defun dlukes/ediff-doom-config (file)
-  "ediff the current config with the examples in doom-emacs-dir
-
-There are multiple config files, so FILE specifies which one to
-diff.
-"
-  (interactive
-    (list (read-file-name "Config file to diff: " doom-private-dir)))
-  (let* ((stem (file-name-base file))
-          (customized-file (format "%s.el" stem))
-          (template-file-regex (format "^%s.example.el$" stem)))
-    (ediff-files
-      (concat doom-private-dir customized-file)
-      (car (directory-files-recursively
-             doom-emacs-dir
-             template-file-regex
-             nil
-             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
-#+end_src

@@ -1,19 +1,7 @@
 ;; my/functions.el -*- lexical-binding: t; -*-
 
-;; (defun gh/toggle-theme ()
-;;
-;; TODO Add vars for light and dark
-;;      Toggle between them
-;;
-;;   (interactive)
-;;   (if (eq (car custom-enabled-themes) 'tsdh-light)
-;;       (disable-theme 'tsdh-light)
-;;     (load-theme 'tsdh-light)))
-
-
 (defun ps-print-buffer-with-confirmation ()
   "Paginate and print buffer contents as image."
-
   (interactive
    (unless (y-or-n-p "Send current buffer to default printer? ")
      (error "Canceled")))
@@ -23,17 +11,14 @@
 (defun gh/relative-name-nondirectory (path level)
   "Return the filename of the directory LEVEL above the end of path.
    Zero indexed. (First above is level 0.)"
-
   (if (= level 0)
       (file-name-nondirectory (directory-file-name (file-name-directory path)))
       (gh/relative-name-nondirectory (directory-file-name (file-name-directory path)) (- level 1))))
 
 
-
 (defun gh/insert-time ()
   (interactive)
   (insert (format-time-string "%I:%M" (current-time))))
-
 
 
 (defun gh/get-safari-front-name ()
@@ -96,13 +81,15 @@ end tell
                        )))
 
 
+;; (defvar org-agenda-toggle-include-all-files nil)
+
+
 (defun gh/org-agenda-files-changed-p ()
   (not (equal org-agenda-files (gh/set-org-agenda-files))))
 
 
 (defun gh/open-or-pop-to-agenda ()
   "Open Agenda if created, otherwise create and open it."
-
   (interactive)
   (if (gh/org-agenda-files-changed-p)
       (org-agenda)
@@ -115,7 +102,6 @@ end tell
 ;; WIP
 ;; (defun gh/org-roam-dailies-goto-next-note-or-tomorrow ()
 ;;   "Find next daily-note, or tomorrow it at newest note."
-
 ;;   (interactive "p")
 ;; (condition-case nil
 ;;     (delete-file filename)
