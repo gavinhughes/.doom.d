@@ -1,5 +1,5 @@
-#+title: Config
-#+startup: overview
+#+TITLE: Config
+#+STARTUP: overview
 
 * Todo
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
@@ -212,6 +212,8 @@ diff.
 #+end_src
 
 * Global keymaps
+- #idea Global keymaps use =s-=. Mode keymaps use =h-=.
+
 ** Cords used in MacOS
 Don't use these.
 #+begin_src
@@ -260,7 +262,7 @@ Hyper key to get there quickly.
 (map!
 ;;   This might be better defined in their category locations than references
 ;;   with a master list in comments here.
-;; "H-a"         (cmd! (find-file "~/Desktop/stack.log"))
+"H-s"         (cmd! (find-file "~/Desktop/stack.log"))
 "H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
 "H-\\"        'toggle-theme
 "C-M-;"      'yank-from-kill-ring
@@ -352,7 +354,8 @@ Hyper key to get there quickly.
 
 * Org Mode
 ** Config
-Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
+
+- Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
 #+begin_src emacs-lisp :tangle no
 (add-load-path! "my/org-mode")
 (require 'org-mac-link)
@@ -645,7 +648,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
       ))))
 #+end_src
 
-** Org Roam
+* Roam
 #+begin_src emacs-lisp :tangle yes
 (setq org-roam-v2-ack t
       org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
@@ -662,8 +665,22 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview
-| [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]] | [[elisp:(gh/open-or-pop-to-agenda)][Agenda]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+#+TAGS:
+:RESOURCES:
+- Record meetings.
+- One up-and-out.
 
+[[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+[[elisp:(counsel-locate \"Assigned Tasks\")][Assigned Tasks]]
+[[id:74c82416-8fbb-4eed-9ae0-fe774507a7e3][Stack]]
+[[elisp:(counsel-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
+[[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]]
+
+[[elisp:(counsel-locate \"Sleep-drink Log\")][Sleep Log]]
+[[elisp:(counsel-locate \"Goal Tracker\")][Goals]]
+[[id:9f575fc8-6b38-4e33-920d-20940860d924][Self]]
+[[id:c0bf71fa-f63e-46d5-9ae3-1d92e6a1b15c][Journal]]
+:END:
 "))))
 #+end_src
 * Other Modes
