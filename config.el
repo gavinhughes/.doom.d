@@ -160,7 +160,7 @@
 (map!
 ;;   This might be better defined in their category locations than references
 ;;   with a master list in comments here.
-;; "H-a"         (cmd! (find-file "~/Desktop/stack.log"))
+"H-s"         (cmd! (find-file (expand-file-name "stack.org" org-roam-directory)))
 "H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
 "H-\\"        'toggle-theme
 "C-M-;"      'yank-from-kill-ring
@@ -258,7 +258,9 @@
   ;; Not working 7/13/21
   org-ctrl-k-protect-subtree t
   org-blank-before-new-entry '((heading . nil)
-                               (plain-list-item . nil)))
+                               (plain-list-item . nil))
+  org-appear-trigger 'on-change)
+    ;; Other options: https://github.com/awth13/org-appear/blob/master/org-appear.el
 
 (setq auto-save-timeout 30)
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
@@ -297,6 +299,10 @@
   ;; "pink1" is here in search of a solution that would undefine the color on a link
   ;; and inherit.
   '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
+
+  (add-hook 'org-mode-hook 'org-fragtog-mode)
+    ;; Automatically toggle LaTeX fragment previews as cursor enters and exits
+  org-format-latex-options '(:scale 2.0)
 
 (map! :map org-mode-map
   :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
@@ -340,44 +346,6 @@
   ;; :leader "a a"   'gh/set-org-agenda-all-files
   ;; :leader "a c"   'gh/set-org-agenda-crowley-files
   )
-
-(map!
-    "H-,"         'org-roam-dailies-goto-today
-    "H-."         (cmd! (find-file (expand-file-name "daily.org"
-                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
-    "H-d"         'org-roam-dailies-goto-date
-    "H-["         'org-roam-dailies-goto-previous-note
-    "H-]"         'org-roam-dailies-goto-next-note
-)
-
-(map! :map org-roam-mode-map
-    ;; Add :n to override assignment in +workspaces
-        "<f7>"        'org-tags-view
-        "<f9>"        'org-agenda-list
-
-  "s-I"                'org-roam-node-insert
-        ;; `r` org-roam
-    :leader "r r"     'org-roam-node-find
-    :leader "r b"     'org-roam-buffer-toggle
-)
-
-(setq
-  org-use-tag-inheritance nil
-  org-agenda-use-tag-inheritance nil
-  org-tag-alist '((:startgrouptag)
-                  ("Interaction")
-                  (:grouptags)
-                  ("ia")
-                  ("{ia#.+}")
-                  (:endgrouptag))
-
-  ;; https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
-  ;; org-preview-latex-default-process 'dvisvgm
-  ;; org-format-latex-options '(:scale 2.0)
-  ;; org-startup-with-inline-images 0
-  ;; org-startup-with-latex-preview 0
-    ;; Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
- )
 
 (use-package! org-mac-link
   ;; Current version of Outlook doesn't support direct links to messages.
@@ -456,16 +424,55 @@
                                       :target (file+head "${slug}.org"
                                                          "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
                                       :unnarrowed t))
-      org-roam-dailies-directory "daily"
-      org-roam-dailies-capture-templates '(("d" "default" entry
+      org-roam-dailies-directory "daily")
+
+(setq org-roam-dailies-capture-templates '(("d" "default" entry
                                             "* %?"
                                         :target (file+head
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview
-| [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]] | [[elisp:(gh/open-or-pop-to-agenda)][Agenda]] | [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]] |
+#+TAGS:
+:RESOURCES:
+- Record meetings.
 
+[[id:08adbfaa-a334-4408-b0e2-b93a0476e0b4][Up and Out]]:
+[[id:3ee42355-9ee2-4fd7-9a08-2d68bea5575c][Public Speaking]]:
+Dinner invites:
+
+[[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+[[elisp:(counsel-locate \"Assigned Tasks\")][Assigned Tasks]]
+[[id:74c82416-8fbb-4eed-9ae0-fe774507a7e3][Stack]]
+[[elisp:(counsel-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
+[[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]]
+
+[[id:c0bf71fa-f63e-46d5-9ae3-1d92e6a1b15c][Journal]]
+[[elisp:(counsel-locate \"Sleep-drink Log\")][Sleep Log]]
+[[elisp:(counsel-locate \"Goal Tracker\")][Goals]]
+[[id:9f575fc8-6b38-4e33-920d-20940860d924][Self]]
+:END:
 "))))
+
+(map! :map org-roam-mode-map
+    ;; Add :n to override assignment in +workspaces
+        "<f7>"        'org-tags-view
+        "<f9>"        'org-agenda-list
+
+  "s-I"                'org-roam-node-insert
+        ;; `r` org-roam
+    :leader "r r"     'org-roam-node-find
+    :leader "r i"     'org-roam-node-insert
+    :leader "r b"     'org-roam-buffer-toggle
+)
+
+(map!
+    "H-,"         'org-roam-dailies-goto-today
+    "H-."         (cmd! (find-file (expand-file-name "daily.org"
+                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
+    "H-d"         'org-roam-dailies-goto-date
+    "H-["         'org-roam-dailies-goto-previous-note
+    "H-]"         'org-roam-dailies-goto-next-note
+)
 
 (map! :map haskell-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
