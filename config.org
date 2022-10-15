@@ -426,7 +426,8 @@ https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
 #+begin_src emacs-lisp :tangle yes
   (add-hook 'org-mode-hook 'org-fragtog-mode)
     ;; Automatically toggle LaTeX fragment previews as cursor enters and exits
-  org-format-latex-options '(:scale 2.0)
+(setq
+  org-format-latex-options '(:scale 2.0))
 #+end_src
 
 ** Keymaps
