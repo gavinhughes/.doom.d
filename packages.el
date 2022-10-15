@@ -29,6 +29,8 @@
 ;;            :files ("*.el" "filters" "preprocessors")))
 (package! org-appear)
   ;; Auto-show markup symbols (=, *, etc) in org
+(package! org-fragtog)
+  ;; Automatically toggle Org mode LaTeX fragment previews as the cursor enters and exits them
 
 ;; org-mac-link removed from org. applescript portion of file not working.
 ;; Homepage: https://gitlab.com/aimebertrand/org-mac-link

@@ -372,13 +372,20 @@ Hyper key to get there quickly.
   ;; Not working 7/13/21
   org-ctrl-k-protect-subtree t
   org-blank-before-new-entry '((heading . nil)
-                               (plain-list-item . nil)))
+                               (plain-list-item . nil))
+  org-appear-trigger 'on-change)
+    ;; Other options: https://github.com/awth13/org-appear/blob/master/org-appear.el
 #+end_src
 
 Save org buffers every 5 seconds of idle time. Necessary for Logseq. Without it, I would jump over to Logseq and make edits without first writing changes in the org file resulting in a fork.
 #+begin_src emacs-lisp :tangle yes
 (setq auto-save-timeout 30)
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
+(add-hook 'org-mode-hook 'org-fragtog-mode)
+  ;; Automatically toggle LaTeX fragment previews as cursor enters and exits
+
+
+
 #+end_src
 
 ** Appearance
@@ -469,32 +476,6 @@ Fonts
   ;; :leader "a a"   'gh/set-org-agenda-all-files
   ;; :leader "a c"   'gh/set-org-agenda-crowley-files
   )
-#+end_src
-
-Roam keys that make sense in anywhere.
-#+begin_src emacs-lisp :tangle yes
-(map!
-    "H-,"         'org-roam-dailies-goto-today
-    "H-."         (cmd! (find-file (expand-file-name "daily.org"
-                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
-    "H-d"         'org-roam-dailies-goto-date
-    "H-["         'org-roam-dailies-goto-previous-note
-    "H-]"         'org-roam-dailies-goto-next-note
-)
-#+end_src
-
-Roam keys that only make sense in a roam buffer.
-#+begin_src emacs-lisp :tangle yes
-(map! :map org-roam-mode-map
-    ;; Add :n to override assignment in +workspaces
-        "<f7>"        'org-tags-view
-        "<f9>"        'org-agenda-list
-
-  "s-I"                'org-roam-node-insert
-        ;; `r` org-roam
-    :leader "r r"     'org-roam-node-find
-    :leader "r b"     'org-roam-buffer-toggle
-)
 #+end_src
 
 #+begin_src emacs-lisp :tangle no
@@ -649,6 +630,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 #+end_src
 
 * Roam
+** Config
 #+begin_src emacs-lisp :tangle yes
 (setq org-roam-v2-ack t
       org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
@@ -658,8 +640,12 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
                                       :target (file+head "${slug}.org"
                                                          "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
                                       :unnarrowed t))
-      org-roam-dailies-directory "daily"
-      org-roam-dailies-capture-templates '(("d" "default" entry
+      org-roam-dailies-directory "daily")
+#+end_src
+
+** Daily Template
+#+begin_src emacs-lisp :tangle yes
+(setq org-roam-dailies-capture-templates '(("d" "default" entry
                                             "* %?"
                                         :target (file+head
 "%<%Y-%m-%d>.org"
@@ -668,7 +654,10 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 #+TAGS:
 :RESOURCES:
 - Record meetings.
-- One up-and-out.
+
+[[id:08adbfaa-a334-4408-b0e2-b93a0476e0b4][Up and Out]]:
+[[id:3ee42355-9ee2-4fd7-9a08-2d68bea5575c][Public Speaking]]:
+Dinner invites:
 
 [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
 [[elisp:(counsel-locate \"Assigned Tasks\")][Assigned Tasks]]
@@ -676,12 +665,39 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 [[elisp:(counsel-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
 [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]]
 
+[[id:c0bf71fa-f63e-46d5-9ae3-1d92e6a1b15c][Journal]]
 [[elisp:(counsel-locate \"Sleep-drink Log\")][Sleep Log]]
 [[elisp:(counsel-locate \"Goal Tracker\")][Goals]]
 [[id:9f575fc8-6b38-4e33-920d-20940860d924][Self]]
-[[id:c0bf71fa-f63e-46d5-9ae3-1d92e6a1b15c][Journal]]
 :END:
 "))))
+#+end_src
+** Keymaps
+*** In Roam mode
+#+begin_src emacs-lisp :tangle yes
+(map! :map org-roam-mode-map
+    ;; Add :n to override assignment in +workspaces
+        "<f7>"        'org-tags-view
+        "<f9>"        'org-agenda-list
+
+  "s-I"                'org-roam-node-insert
+        ;; `r` org-roam
+    :leader "r r"     'org-roam-node-find
+    :leader "r i"     'org-roam-node-insert
+    :leader "r b"     'org-roam-buffer-toggle
+)
+#+end_src
+
+*** Any mode.
+#+begin_src emacs-lisp :tangle yes
+(map!
+    "H-,"         'org-roam-dailies-goto-today
+    "H-."         (cmd! (find-file (expand-file-name "daily.org"
+                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
+    "H-d"         'org-roam-dailies-goto-date
+    "H-["         'org-roam-dailies-goto-previous-note
+    "H-]"         'org-roam-dailies-goto-next-note
+)
 #+end_src
 * Other Modes
 ** Haskell
