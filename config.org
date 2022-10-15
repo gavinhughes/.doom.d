@@ -503,40 +503,6 @@ https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
  )
 #+end_src
 
-** More
-;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
-;; Installed. How to use it? [2021-12-13 Mon]
-;; (require 'org-roam-protocol)
-
-#+begin_src emacs-lisp :tangle yes
-(use-package! org-mac-link
-  ;; Current version of Outlook doesn't support direct links to messages.
-    :after org
-    :config
-    (setq org-mac-grab-Acrobat-app-p nil) ; Disable grabbing from Adobe Acrobat
-    (setq org-mac-grab-devonthink-app-p nil) ; Disable grabbinb from DevonThink
-    (map! :map org-mode-map          "C-c g"  #'org-mac-grab-link))
-
-;; Logseq
-;; (setq org-logseq-dir "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam/")
-;; (setq org-agenda-files (directory-files "~/iCloud/OrgNotes" nil "."));;)"~/iCloud/OrgNotes/")
-;; (setq org-agenda-inhibit-startup t)
-;; (setq org-agenda-dim-blocked-tasks nil)
-
-;; (use-package! org-roam-bibtex
-;;   :after org-roam
-;;   :config
-;;   (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
-
-;; (setq org-roam-capture-templates
-;;       '(;; ... other templates
-;;         ;; bibliography note template
-;;         ("r" "bibliography reference" plain "%?"
-;;         :target
-;;         (file+head "references/${citekey}.org" "#+title: ${title}\n")
-;;         :unnarrowed t)))
-#+end_src
-
 ** Literate config
 The Doom +literate module will tangle automatically on save. Need to turn this off because:
 1. My org is configured to autosave to avoid losing work when using Roam with Logseq;
@@ -589,6 +555,39 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 #+end_src
 
 ** More
+;; https://www.orgroam.com/manual.html#Org_002droam-Protocol
+;; Installed. How to use it? [2021-12-13 Mon]
+;; (require 'org-roam-protocol)
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! org-mac-link
+  ;; Current version of Outlook doesn't support direct links to messages.
+    :after org
+    :config
+    (setq org-mac-grab-Acrobat-app-p nil) ; Disable grabbing from Adobe Acrobat
+    (setq org-mac-grab-devonthink-app-p nil) ; Disable grabbinb from DevonThink
+    (map! :map org-mode-map          "C-c g"  #'org-mac-grab-link))
+
+;; Logseq
+;; (setq org-logseq-dir "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam/")
+;; (setq org-agenda-files (directory-files "~/iCloud/OrgNotes" nil "."));;)"~/iCloud/OrgNotes/")
+;; (setq org-agenda-inhibit-startup t)
+;; (setq org-agenda-dim-blocked-tasks nil)
+
+;; (use-package! org-roam-bibtex
+;;   :after org-roam
+;;   :config
+;;   (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
+
+;; (setq org-roam-capture-templates
+;;       '(;; ... other templates
+;;         ;; bibliography note template
+;;         ("r" "bibliography reference" plain "%?"
+;;         :target
+;;         (file+head "references/${citekey}.org" "#+title: ${title}\n")
+;;         :unnarrowed t)))
+#+end_src
+
 #+begin_src emacs-lisp :tangle yes
 (add-hook 'org-mode-hook #'org-appear-mode)
 (after! org

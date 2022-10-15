@@ -158,95 +158,92 @@
  )
 
 (map!
-;;   This might be better defined in their category locations than references
-;;   with a master list in comments here.
-"H-s"         (cmd! (find-file (expand-file-name "stack.org" org-roam-directory)))
-"H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
-"H-\\"        'toggle-theme
-"C-M-;"      'yank-from-kill-ring
-"H-y"        'doom/delete-this-file
-"H-j"        'gh/org-open-journal
+  "H-s"         (cmd! (find-file (expand-file-name "stack.org" org-roam-directory)))
+  "H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
+  "H-\\"        'toggle-theme
+  "H-y"         'doom/delete-this-file
+  "H-j"         'gh/org-open-journal
 
- ;; Movement
- :n "$"                  'end-of-visual-line
- :n "j"                  'evil-next-visual-line
- :n "k"                  'evil-previous-visual-line
-    "M-<left>"           'backward-word
-    "M-<right>"          'forward-word
-    "M-s-l"              'avy-goto-char
-    "M-s-;"              'avy-goto-char-2
- :i "s-l" "<escape>la" ;; Step forward over single chars without leaving insert mode
- :i "s-h" "<escape>ha" ;; Step back over...
- :i "s-S" "<escape>0i" ;; Jump to col 0. Useful in org mode
+   ;; Movement
+   :n "$"                  'end-of-visual-line
+   :n "j"                  'evil-next-visual-line
+   :n "k"                  'evil-previous-visual-line
+      "M-<left>"           'backward-word
+      "M-<right>"          'forward-word
+      "M-s-l"              'avy-goto-char
+      "M-s-;"              'avy-goto-char-2
+   :i "s-l" "<escape>la" ;; Step forward over single chars without leaving insert mode
+   :i "s-h" "<escape>ha" ;; Step back over...
+   :i "s-S" "<escape>0i" ;; Jump to col 0. Useful in org mode
 
- :i "M-o"  'evil-execute-in-normal-state
+   :i "M-o"  'evil-execute-in-normal-state
 
-:ni "M-."                'better-jumper-jump-forward
-:ni "M-,"                'better-jumper-jump-backward
+  :ni "M-."                'better-jumper-jump-forward
+  :ni "M-,"                'better-jumper-jump-backward
 
- ;; Special characters
- :i "M--" "–" ;; m-dash. Consistent with Mac.
+  ;; Special characters
+  :i "M--" "–" ;; m-dash. Consistent with Mac.
 
- ;; Buffers
- "s-n"            (cmd! (evil-buffer-new 1 nil))
- "s-k"            'kill-current-buffer
- "M-s-k"          'kill-buffer-and-window
- "s-,"            'ivy-switch-buffer
- "M-s-]"          'next-buffer
- "M-s-["          'previous-buffer
- "s-p"            'ps-print-buffer-with-confirmation
- "s-;"            'org-roam-node-find
- "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
+  ;; Buffers
+  "s-n"            (cmd! (evil-buffer-new 1 nil))
+  "s-k"            'kill-current-buffer
+  "M-s-k"          'kill-buffer-and-window
+  "s-,"            'ivy-switch-buffer
+  "M-s-]"          'next-buffer
+  "M-s-["          'previous-buffer
+  "s-p"            'ps-print-buffer-with-confirmation
+  "s-;"            'org-roam-node-find
+  "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
 
- ;; Windows
- "s-'"            'evil-window-next
- "s-\""           'evil-window-prev
- "C-S-M-<return>" 'toggle-frame-fullscreen
- ;; Doesn't work in emacs-mac. All frames are maximized.
- ;; "C-M-<return>" 'toggle-frame-maximized
+  ;; Windows
+  "s-'"            'evil-window-next
+  "s-\""           'evil-window-prev
+  "C-S-M-<return>" 'toggle-frame-fullscreen
+  ;; Doesn't work in emacs-mac. All frames are maximized.
+  ;; "C-M-<return>" 'toggle-frame-maximized
 
-;; Workspaces.
-;; :n assignment is in the package. Add :i.
-;; [2022-05-22 Sun] Just pulled out the :ni to make this work in the agenda. Any issues??
- "s-1"        '+workspace/switch-to-0
- "s-2"        '+workspace/switch-to-1
- "s-3"        '+workspace/switch-to-2
- "s-4"        '+workspace/switch-to-3
+  ;; Workspaces.
+  ;; :n assignment is in the package. Add :i.
+  ;; [2022-05-22 Sun] Just pulled out the :ni to make this work in the agenda. Any issues??
+  "s-1"        '+workspace/switch-to-0
+  "s-2"        '+workspace/switch-to-1
+  "s-3"        '+workspace/switch-to-2
+  "s-4"        '+workspace/switch-to-3
 
- ;; Other
- :ni "s-O"       'evil-open-above
-     "s-<up>"    '+evil/insert-newline-above
-     "s-<down>"  '+evil/insert-newline-below
-     ;; "M-<return>" '+evil/insert-newline-below
-     "M-<return>"  '+default/newline-below
-;; was "H-<return>" with the following note:
-  ;; todo. write about the reason for this. Has to do with org mode conflict 's-<return>'
- ;; :ni "s-<return>" (cmd! (message "Use <H-return>"))
-:niv "C-u"       'universal-argument
+  ;; Other
+  :ni "s-O"       'evil-open-above
+      "s-<up>"    '+evil/insert-newline-above
+      "s-<down>"  '+evil/insert-newline-below
+      ;; "M-<return>" '+evil/insert-newline-below
+      "M-<return>"  '+default/newline-below
+  ;; was "H-<return>" with the following note:
+   ;; todo. write about the reason for this. Has to do with org mode conflict 's-<return>'
+  ;; :ni "s-<return>" (cmd! (message "Use <H-return>"))
+  :niv "C-u"       'universal-argument
 
-;; Make `$` behave same as in :normal.
- :v  "$"         (cmd! (evil-end-of-line) (evil-backward-char) (evil-forward-char))
+  ;; Make `$` behave same as in :normal.
+  :v  "$"         (cmd! (evil-end-of-line) (evil-backward-char) (evil-forward-char))
 
- ;; Leaders – place last, otherwise errors.
- :leader "f m"   'doom/move-this-file
- :leader "b n"   'rename-buffer
- :leader "b c"   'gh/clone-indirect-buffer-vertically
- :leader "j d"   'dired-jump
- :leader "<"     '+ivy/switch-workspace-buffer
- :leader ","     'ivy-switch-buffer
- :leader "SPC"   '+ivy/projectile-find-file
- :leader "f d"   'doom/delete-this-file
+  ;; Leaders – place last, otherwise errors.
+  :leader "f m"   'doom/move-this-file
+  :leader "b n"   'rename-buffer
+  :leader "b c"   'gh/clone-indirect-buffer-vertically
+  :leader "j d"   'dired-jump
+  :leader "<"     '+ivy/switch-workspace-buffer
+  :leader ","     'ivy-switch-buffer
+  :leader "SPC"   '+ivy/projectile-find-file
+  :leader "f d"   'doom/delete-this-file
 
-;; Git
- :leader "g f d"   'magit-diff-buffer-file
+  ;; Git
+  :leader "g f d"   'magit-diff-buffer-file
 
- ;; `m` Mac OS
- :leader "m m d"   '+macos/open-in-default-program
- :leader "m m o"   'reveal-in-osx-finder
+  ;; `m` Mac OS
+  :leader "m m d"   '+macos/open-in-default-program
+  :leader "m m o"   'reveal-in-osx-finder
 
- ;; `t` Toggle
- :leader "t v"   'visual-fill-column-mode
- )
+  ;; `t` Toggle
+  :leader "t v"   'visual-fill-column-mode
+)
 
 (setq
   org-directory "~/iCloud/OrgNotes/"
@@ -300,9 +297,10 @@
   ;; and inherit.
   '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
 
-  (add-hook 'org-mode-hook 'org-fragtog-mode)
+(add-hook 'org-mode-hook 'org-fragtog-mode)
     ;; Automatically toggle LaTeX fragment previews as cursor enters and exits
-  org-format-latex-options '(:scale 2.0)
+(setq
+  org-format-latex-options '(:scale 2.0))
 
 (map! :map org-mode-map
   :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
