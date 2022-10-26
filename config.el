@@ -9,37 +9,16 @@
 (auto-compile-on-save-mode)
 (setq load-prefer-newer t)
 
-;; These add load paths but don't load all files in them.
-;; (add-load-path! "my/global")
-;; (add-load-path! "modules")
-
 (load! "my/global/functions.el")
-
-;; Run programs in the Emacs buffer holding their source, seeing their output inline, interactively.
-;; Better approach to loading?
-(load! "~/.doom.d/modules/halp.el")
-
-;; Use word wrap in all buffers that minor mode message-mode.
-;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
-(remove-hook 'text-mode-hook #'auto-fill-mode)
-(add-hook 'message-mode-hook #'word-wrap-mode)
-
-(add-hook! 'org-mode-hook #'mixed-pitch-mode)
-(setq mixed-pitch-variable-pitch-cursor nil)
 
 (setq
   shell-file-name "/opt/homebrew/bin/fish"
   mac-right-command-modifier 'hyper
   trash-directory "~/.Trash"
-  confirm-kill-emacs nil
-    ;; Disable exit confirmation
+  confirm-kill-emacs nil ; Disable exit confirmation
 
   user-full-name "Gavin Hughes"
   user-mail-address "gavhug@gmail.com"
-
-  doom-font (font-spec :family "DejaVu Sans Mono" :size 16)
-  doom-variable-pitch-font (font-spec :family "DejaVu Serif" :size 18)
-  doom-serif-font (font-spec :family "DejaVu Serif")
 
   doom-scratch-initial-major-mode 'org-mode
   undo-limit 80000000                         ; Raise undo-limit to 80Mb
@@ -49,13 +28,11 @@
   truncate-string-ellipsis "…"                ; Use unicode ellipsis
   global-visual-line-mode t                   ; Visual line navigation everywhere.
 
-  ;; ispell-program-name "hunspell"
   display-line-numbers-type 'visual
 
   ;; Finder "put back" is not supported. If desired, instructions are here
   ;; https://christiantietze.de/posts/2021/06/emacs-trash-file-macos/
   delete-by-moving-to-trash t
-
 
   ;; https://github.com/jschaf/esup/issues/54
   ;; work around a bug where esup tries to step into the byte-compiled
@@ -63,7 +40,12 @@
   esup-depth 0
   )
 
-(setq ispell-personal-dictionary "~/.doom.d/aspell.en.pws")
+;; Spelling
+(remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
+(setq
+   ispell-personal-dictionary "~/.doom.d/aspell.en.pws"
+   ;; ispell-program-name "hunspell"
+   )
 
 (setq projectile-indexing-method 'native)
 (add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
@@ -72,9 +54,29 @@
   ;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
 (setq-default major-mode 'org-mode)
   ;; If set to ‘nil’, the major mode is taken from the previously current buffer.
-(remove-hook 'text-mode-hook #'spell-fu-mode)
-  ;; Focus on writing, not spelling.
-(add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
+
+(add-to-list 'default-frame-alist '(fullscreen . maximized)) ; Maximize frame at startup
+
+(defvar dark-theme  'gav-one)
+(defvar light-theme 'gav-one-light)
+(defun toggle-theme ()
+  "Toggle between my light and dark themes."
+  (interactive)
+  (if (eq (car custom-enabled-themes) dark-theme)
+      (load-theme light-theme)
+    (load-theme dark-theme)))
+
+;; Make text easier to read by increasing space between lines.
+(add-hook 'org-mode-hook (lambda () (setq line-spacing 10)))
+
+;; Use word wrap in all buffers that minor mode message-mode.
+;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
+(remove-hook 'text-mode-hook #'auto-fill-mode)
+(add-hook 'message-mode-hook #'word-wrap-mode)
+
+(add-hook! 'org-mode-hook #'mixed-pitch-mode)
+(setq mixed-pitch-variable-pitch-cursor nil)
+
   ;; Don't spread text across the entire screen.
 (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust)
 (setq
@@ -82,23 +84,52 @@
   visual-fill-column-center-text t
   visual-fill-column-width 100
 )
+(add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
 
-;; Maximize frame at startup.
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
+(setq
+  doom-font (font-spec :family "DejaVu Sans Mono" :size 16)
+  doom-variable-pitch-font (font-spec :family "DejaVu Serif" :size 18)
+  doom-serif-font (font-spec :family "DejaVu Serif")
+)
+
+(setq
+    org-priority-faces '((?A . (:foreground "dim grey"))
+                        (?B . (:foreground "dim grey"))
+                        (?C . (:foreground "dim grey")))
+    org-todo-keyword-faces
+    '(
+            ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
+            ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
+            ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
+            ("PENDING" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("PAUSED" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("[ ]" :foreground "dim grey")
+            ("[X]" :foreground "grey25")
+            ("CANCELLED" :foreground "grey25" :weight bold :family "DejaVu Sans Mono"))
+   )
+
+(custom-theme-set-faces
+  'user
+  ;; Use only two alternating colors for heading.
+  '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15))))
+  '(org-level-2 ((t (:weight bold :foreground "systemBrownColor"))))
+  '(org-level-3 ((t (:foreground "systemTealColor"))))
+  '(org-level-4 ((t (:foreground "systemBrownColor"))))
+  '(org-level-5 ((t (:foreground "systemTealColor"))))
+  '(org-level-6 ((t (:foreground "systemBrownColor"))))
+
+  ;; Remove bold from links.
+  ;; "pink1" is here in search of a solution that would undefine the color on a link
+  ;; and inherit.
+  '(link ((t (:weight normal :underline "grey37" :foreground "pink1"))))
+)
 
 (defun gh/clone-indirect-buffer-vertically ()
   (interactive)
   (clone-indirect-buffer nil 1)
   (+evil/window-move-right))
-
-(defvar dark-theme  'doom-one)
-(defvar light-theme 'doom-one-light)
-(defun toggle-theme ()
-  "Toggle between my light and dark themes."
-  (interactive)
-  (if (eq (car custom-enabled-themes) dark-theme)
-      (load-theme light-theme)
-    (load-theme dark-theme)))
 
 (defun gh/org-time-stamp-inactive ()
   (interactive)
@@ -136,6 +167,7 @@
   (insert (format-time-string "%Y/%m/%d")))
 
 (map!
+     "C-x b"     'undefined ; switch-to-buffer
  :n  "O"         'undefined ; evil-open-above
  :ni "C-d"       'undefined ; evil-scroll-down
      "M-d"       'undefined ; kill-word
@@ -150,6 +182,7 @@
                             ; This is assigned thru Maestro as "Open Recent"
 
  :leader ":"     'undefined ; M-x
+ ;; :leader "b B"   'undefined ; switch-to-buffer
  :leader "."     'undefined ; counsel-find-file. SPC ff
  :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
  :leader "X"     'undefined
@@ -186,9 +219,10 @@
 
   ;; Buffers
   "s-n"            (cmd! (evil-buffer-new 1 nil))
-  "s-k"            'kill-current-buffer
-  "M-s-k"          'kill-buffer-and-window
-  "s-,"            'ivy-switch-buffer
+  "M-s-k"          'kill-current-buffer
+  "M-s-K"          'kill-buffer-and-window
+  "s-,"            '+vertico/switch-workspace-buffer
+  "M-s-,"          'consult-buffer
   "M-s-]"          'next-buffer
   "M-s-["          'previous-buffer
   "s-p"            'ps-print-buffer-with-confirmation
@@ -229,9 +263,7 @@
   :leader "b n"   'rename-buffer
   :leader "b c"   'gh/clone-indirect-buffer-vertically
   :leader "j d"   'dired-jump
-  :leader "<"     '+ivy/switch-workspace-buffer
-  :leader ","     'ivy-switch-buffer
-  :leader "SPC"   '+ivy/projectile-find-file
+  :leader "SPC"   'consult-find
   :leader "f d"   'doom/delete-this-file
 
   ;; Git
@@ -251,7 +283,7 @@
   org-attach-id-dir (concat org-directory "attachments/")
   org-ellipsis " ▼ "
   org-cycle-separator-lines 3
-  org-special-ctrl-k t
+  org-special-ctrl-k t ; What's this?
   ;; Not working 7/13/21
   org-ctrl-k-protect-subtree t
   org-blank-before-new-entry '((heading . nil)
@@ -262,45 +294,7 @@
 (setq auto-save-timeout 30)
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 
-(add-hook 'org-mode-hook (lambda () (setq line-spacing 10)))
-
-(setq
-    org-priority-faces '((?A . (:foreground "dim grey"))
-                        (?B . (:foreground "dim grey"))
-                        (?C . (:foreground "dim grey")))
-    org-todo-keyword-faces
-    '(
-            ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
-            ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
-            ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
-            ("PENDING" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("PAUSED" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("[ ]" :foreground "dim grey")
-            ("[X]" :foreground "grey25")
-            ("CANCELLED" :foreground "grey25" :weight bold :family "DejaVu Sans Mono"))
-   )
-
-(custom-theme-set-faces
-  'user
-  ;; Use only two alternating colors for heading.
-  '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15))))
-  '(org-level-2 ((t (:weight bold :foreground "systemBrownColor"))))
-  '(org-level-3 ((t (:foreground "systemTealColor"))))
-  '(org-level-4 ((t (:foreground "systemBrownColor"))))
-  '(org-level-5 ((t (:foreground "systemTealColor"))))
-  '(org-level-6 ((t (:foreground "systemBrownColor"))))
-
-  ;; Remove bold from links.
-  ;; "pink1" is here in search of a solution that would undefine the color on a link
-  ;; and inherit.
-  '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
-
-(add-hook 'org-mode-hook 'org-fragtog-mode)
-    ;; Automatically toggle LaTeX fragment previews as cursor enters and exits
-(setq
-  org-format-latex-options '(:scale 2.0))
+(remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
 
 (map! :map org-mode-map
   :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
@@ -308,9 +302,8 @@
   :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
   :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
   ;; Insert a heading while currently working a bullet list
-  :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1) (+org/insert-item-below 1))
-
-
+  :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1)
+                                  (+org/insert-item-below 1))
 
   "M-s-SPC"            'org-capture
 
@@ -324,8 +317,7 @@
   "C->"                'org-do-demote
   ;; "s-."                'org-shiftright
   ;; "s->"                'org-shiftleft
-  ;; Previously, "H-l"                "C-u C-u C-c C-x C-l" ;; Preview all latex
-  "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
+  "s-k"                'org-insert-link
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
 
@@ -344,6 +336,20 @@
   ;; :leader "a a"   'gh/set-org-agenda-all-files
   ;; :leader "a c"   'gh/set-org-agenda-crowley-files
   )
+
+(add-hook 'org-mode-hook 'org-fragtog-mode) ; toggle preview when point enters fragment
+
+(require 'org-download)
+(after! org
+  (setq
+    org-download-method 'attach
+    org-download-timestamp "%Y%m%d-%H%M%S_"
+    org-image-actual-width 300
+    org-download-delete-image-after-download 1 ; Delete temp image after download
+    org-download-screenshot-method "/opt/homebrew/bin/pngpaste %s"
+    org-download-annotate-function #'gh/dont-annotate) ; Don't insert any property info above the link.
+  )
+(defun gh/dont-annotate (link) "")
 
 (use-package! org-mac-link
   ;; Current version of Outlook doesn't support direct links to messages.
@@ -371,20 +377,6 @@
 ;;         :target
 ;;         (file+head "references/${citekey}.org" "#+title: ${title}\n")
 ;;         :unnarrowed t)))
-
-(remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
-
-(require 'org-download)
-(after! org
-  (setq
-    org-download-method 'attach
-    org-download-timestamp "%Y%m%d-%H%M%S_"
-    org-image-actual-width 300
-    org-download-delete-image-after-download 1 ; Delete temp image after download
-    org-download-screenshot-method "/opt/homebrew/bin/pngpaste %s"
-    org-download-annotate-function #'gh/dont-annotate) ; Don't insert any property info above the link.
-  )
-(defun gh/dont-annotate (link) "")
 
 (add-hook 'org-mode-hook #'org-appear-mode)
 (after! org
@@ -451,6 +443,15 @@ Dinner invites:
 :END:
 "))))
 
+(map!
+    "H-,"         'org-roam-dailies-goto-today
+    "H-."         (cmd! (find-file (expand-file-name "daily.org"
+                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
+    "H-d"         'org-roam-dailies-goto-date
+    "H-["         'org-roam-dailies-goto-previous-note
+    "H-]"         'org-roam-dailies-goto-next-note
+)
+
 (map! :map org-roam-mode-map
     ;; Add :n to override assignment in +workspaces
         "<f7>"        'org-tags-view
@@ -463,14 +464,13 @@ Dinner invites:
     :leader "r b"     'org-roam-buffer-toggle
 )
 
-(map!
-    "H-,"         'org-roam-dailies-goto-today
-    "H-."         (cmd! (find-file (expand-file-name "daily.org"
-                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
-    "H-d"         'org-roam-dailies-goto-date
-    "H-["         'org-roam-dailies-goto-previous-note
-    "H-]"         'org-roam-dailies-goto-next-note
-)
+(after! ccls
+  (setq ccls-executable "~/bin/ccls"
+        compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (set-lsp-priority! 'ccls 0))
+
+(setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+;; (define-key c++-mode-map [f5] #'compile)
 
 (map! :map haskell-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
@@ -493,18 +493,6 @@ Dinner invites:
 ;; Errors on markdown-insert-list-item
 ;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
  )
-
-(after! eww
-  ;; (load-directory! "my/eww-mode")
-  ;; This has global effect.  How to limit to just eww mode?
-  ;; (visual-fill-column-mode t)
-  (map! :map eww-mode-map
-        "I" #'my/eww-toggle-images
-        "M-<return>" 'my-eww-open-in-new-window
-        "M-s-[" 'eww-back-url
-        "M-s-]" 'eww-forward-url)
-        ;; "<s-mouse-1>" 'my-eww-open-in-new-window
-  )
 
 (map! :map ledger-mode-map
       "C-c C-l" 'ledger-mode-clean-buffer

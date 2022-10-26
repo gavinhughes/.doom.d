@@ -1,8 +1,17 @@
 #+TITLE: Config
 #+STARTUP: overview
 
-* Todo
+* Intro
+- [[https://github.com/doomemacs/doomemacs/tree/594d70292dc134d483fbf7a427001250de07b4d2/templates][Latest templates]] of Doom private config files.
+  Diff on your current =init.el=.
+* Ideas
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
+- Halp runs programs in the Emacs buffer holding their source, seeing their output inline, interactively. Probably not necessary with org-mode, which has literate programming built in.
+   =(load! "~/.doom.d/modules/halp.el")=
+- Use =fd= instead of =find= or =locate=
+   [[https://github.com/sharkdp/fd][fd: A simple, fast and user-friendly alternative to 'find']]
+- If emacs path is not the same is not the same as Mac path, try [[https://github.com/purcell/exec-path-from-shell][this.]]
+-
 * Startup and load
 #+begin_src emacs-lisp :tangle yes
 ;;; config.el -*- lexical-binding: t; -*-
@@ -16,37 +25,16 @@
 (auto-compile-on-save-mode)
 (setq load-prefer-newer t)
 
-;; These add load paths but don't load all files in them.
-;; (add-load-path! "my/global")
-;; (add-load-path! "modules")
-
 (load! "my/global/functions.el")
-
-;; Run programs in the Emacs buffer holding their source, seeing their output inline, interactively.
-;; Better approach to loading?
-(load! "~/.doom.d/modules/halp.el")
-
-;; Use word wrap in all buffers that minor mode message-mode.
-;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
-(remove-hook 'text-mode-hook #'auto-fill-mode)
-(add-hook 'message-mode-hook #'word-wrap-mode)
-
-(add-hook! 'org-mode-hook #'mixed-pitch-mode)
-(setq mixed-pitch-variable-pitch-cursor nil)
 
 (setq
   shell-file-name "/opt/homebrew/bin/fish"
   mac-right-command-modifier 'hyper
   trash-directory "~/.Trash"
-  confirm-kill-emacs nil
-    ;; Disable exit confirmation
+  confirm-kill-emacs nil ; Disable exit confirmation
 
   user-full-name "Gavin Hughes"
   user-mail-address "gavhug@gmail.com"
-
-  doom-font (font-spec :family "DejaVu Sans Mono" :size 16)
-  doom-variable-pitch-font (font-spec :family "DejaVu Serif" :size 18)
-  doom-serif-font (font-spec :family "DejaVu Serif")
 
   doom-scratch-initial-major-mode 'org-mode
   undo-limit 80000000                         ; Raise undo-limit to 80Mb
@@ -56,13 +44,11 @@
   truncate-string-ellipsis "…"                ; Use unicode ellipsis
   global-visual-line-mode t                   ; Visual line navigation everywhere.
 
-  ;; ispell-program-name "hunspell"
   display-line-numbers-type 'visual
 
   ;; Finder "put back" is not supported. If desired, instructions are here
   ;; https://christiantietze.de/posts/2021/06/emacs-trash-file-macos/
   delete-by-moving-to-trash t
-
 
   ;; https://github.com/jschaf/esup/issues/54
   ;; work around a bug where esup tries to step into the byte-compiled
@@ -70,7 +56,12 @@
   esup-depth 0
   )
 
-(setq ispell-personal-dictionary "~/.doom.d/aspell.en.pws")
+;; Spelling
+(remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
+(setq
+   ispell-personal-dictionary "~/.doom.d/aspell.en.pws"
+   ;; ispell-program-name "hunspell"
+   )
 
 (setq projectile-indexing-method 'native)
 (add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
@@ -79,9 +70,40 @@
   ;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
 (setq-default major-mode 'org-mode)
   ;; If set to ‘nil’, the major mode is taken from the previously current buffer.
-(remove-hook 'text-mode-hook #'spell-fu-mode)
-  ;; Focus on writing, not spelling.
-(add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
+
+(add-to-list 'default-frame-alist '(fullscreen . maximized)) ; Maximize frame at startup
+#+end_src
+* Themes and text
+- My themes are in $DOOMDIR/themes.
+
+** Toggle light/dark themes
+#+begin_src emacs-lisp :tangle yes
+(defvar dark-theme  'gav-one)
+(defvar light-theme 'gav-one-light)
+(defun toggle-theme ()
+  "Toggle between my light and dark themes."
+  (interactive)
+  (if (eq (car custom-enabled-themes) dark-theme)
+      (load-theme light-theme)
+    (load-theme dark-theme)))
+#+end_src
+
+*** Ideas
+- You could also try setting when the system inverts colors. This would get you started but needs to be changed for invert, not mode:
+    https://www.reddit.com/r/emacs/comments/hejsqm/is_there_a_way_to_detect_lightdark_mode_on_mac/
+** Font faces and text
+#+begin_src emacs-lisp :tangle yes
+;; Make text easier to read by increasing space between lines.
+(add-hook 'org-mode-hook (lambda () (setq line-spacing 10)))
+
+;; Use word wrap in all buffers that minor mode message-mode.
+;; https://blog.jethro.dev/posts/migrating_to_doom_emacs/
+(remove-hook 'text-mode-hook #'auto-fill-mode)
+(add-hook 'message-mode-hook #'word-wrap-mode)
+
+(add-hook! 'org-mode-hook #'mixed-pitch-mode)
+(setq mixed-pitch-variable-pitch-cursor nil)
+
   ;; Don't spread text across the entire screen.
 (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust)
 (setq
@@ -89,11 +111,55 @@
   visual-fill-column-center-text t
   visual-fill-column-width 100
 )
-
-;; Maximize frame at startup.
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
+(add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
 #+end_src
 
+#+begin_src emacs-lisp :tangle yes
+(setq
+  doom-font (font-spec :family "DejaVu Sans Mono" :size 16)
+  doom-variable-pitch-font (font-spec :family "DejaVu Serif" :size 18)
+  doom-serif-font (font-spec :family "DejaVu Serif")
+)
+#+end_src
+
+Fonts
+#+begin_src emacs-lisp :tangle yes
+(setq
+    org-priority-faces '((?A . (:foreground "dim grey"))
+                        (?B . (:foreground "dim grey"))
+                        (?C . (:foreground "dim grey")))
+    org-todo-keyword-faces
+    '(
+            ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
+            ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
+            ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
+            ("PENDING" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("PAUSED" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("[ ]" :foreground "dim grey")
+            ("[X]" :foreground "grey25")
+            ("CANCELLED" :foreground "grey25" :weight bold :family "DejaVu Sans Mono"))
+   )
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(custom-theme-set-faces
+  'user
+  ;; Use only two alternating colors for heading.
+  '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15))))
+  '(org-level-2 ((t (:weight bold :foreground "systemBrownColor"))))
+  '(org-level-3 ((t (:foreground "systemTealColor"))))
+  '(org-level-4 ((t (:foreground "systemBrownColor"))))
+  '(org-level-5 ((t (:foreground "systemTealColor"))))
+  '(org-level-6 ((t (:foreground "systemBrownColor"))))
+
+  ;; Remove bold from links.
+  ;; "pink1" is here in search of a solution that would undefine the color on a link
+  ;; and inherit.
+  '(link ((t (:weight normal :underline "grey37" :foreground "pink1"))))
+)
+#+end_src
 * My functions
 ** Buffers
 #+begin_src emacs-lisp :tangle yes
@@ -102,21 +168,6 @@
   (clone-indirect-buffer nil 1)
   (+evil/window-move-right))
 #+end_src
-** Toggle theme
-#+begin_src emacs-lisp :tangle yes
-(defvar dark-theme  'doom-one)
-(defvar light-theme 'doom-one-light)
-(defun toggle-theme ()
-  "Toggle between my light and dark themes."
-  (interactive)
-  (if (eq (car custom-enabled-themes) dark-theme)
-      (load-theme light-theme)
-    (load-theme dark-theme)))
-#+end_src
-:NOTES:
-You could also try setting when the system inverts colors. This would get you started but needs to be changed for invert, not mode:
-https://www.reddit.com/r/emacs/comments/hejsqm/is_there_a_way_to_detect_lightdark_mode_on_mac/
-:END:
 ** Org
 #+begin_src emacs-lisp :tangle yes
 (defun gh/org-time-stamp-inactive ()
@@ -213,14 +264,6 @@ diff.
 
 * Global keymaps
 - #idea Global keymaps use =s-=. Mode keymaps use =h-=.
-
-** Cords used in MacOS
-Don't use these.
-#+begin_src
-C-M-<return>    Magnet maximize window
-C-M-<space>     Things quick capture
-#+end_src
-
 ** Undefine chords
 Chords that are:
 1. Pre-defined but unused; or
@@ -228,6 +271,7 @@ Chords that are:
 
 #+begin_src emacs-lisp :tangle yes
 (map!
+     "C-x b"     'undefined ; switch-to-buffer
  :n  "O"         'undefined ; evil-open-above
  :ni "C-d"       'undefined ; evil-scroll-down
      "M-d"       'undefined ; kill-word
@@ -242,6 +286,7 @@ Chords that are:
                             ; This is assigned thru Maestro as "Open Recent"
 
  :leader ":"     'undefined ; M-x
+ ;; :leader "b B"   'undefined ; switch-to-buffer
  :leader "."     'undefined ; counsel-find-file. SPC ff
  :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
  :leader "X"     'undefined
@@ -287,9 +332,10 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
 
   ;; Buffers
   "s-n"            (cmd! (evil-buffer-new 1 nil))
-  "s-k"            'kill-current-buffer
-  "M-s-k"          'kill-buffer-and-window
-  "s-,"            'ivy-switch-buffer
+  "M-s-k"          'kill-current-buffer
+  "M-s-K"          'kill-buffer-and-window
+  "s-,"            '+vertico/switch-workspace-buffer
+  "M-s-,"          'consult-buffer
   "M-s-]"          'next-buffer
   "M-s-["          'previous-buffer
   "s-p"            'ps-print-buffer-with-confirmation
@@ -330,9 +376,7 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
   :leader "b n"   'rename-buffer
   :leader "b c"   'gh/clone-indirect-buffer-vertically
   :leader "j d"   'dired-jump
-  :leader "<"     '+ivy/switch-workspace-buffer
-  :leader ","     'ivy-switch-buffer
-  :leader "SPC"   '+ivy/projectile-find-file
+  :leader "SPC"   'consult-find
   :leader "f d"   'doom/delete-this-file
 
   ;; Git
@@ -348,9 +392,15 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
 #+end_src
 
 
+** Cords used in MacOS
+Don't use these.
+#+begin_src
+C-M-<return>    Magnet maximize window
+C-M-<space>     Things quick capture
+#+end_src
+
 * Org Mode
 ** Config
-
 - Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
 #+begin_src emacs-lisp :tangle no
 (add-load-path! "my/org-mode")
@@ -364,7 +414,7 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
   org-attach-id-dir (concat org-directory "attachments/")
   org-ellipsis " ▼ "
   org-cycle-separator-lines 3
-  org-special-ctrl-k t
+  org-special-ctrl-k t ; What's this?
   ;; Not working 7/13/21
   org-ctrl-k-protect-subtree t
   org-blank-before-new-entry '((heading . nil)
@@ -373,61 +423,17 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
     ;; Other options: https://github.com/awth13/org-appear/blob/master/org-appear.el
 #+end_src
 
-Save org buffers every 5 seconds of idle time. Necessary for Logseq. Without it, I would jump over to Logseq and make edits without first writing changes in the org file resulting in a fork.
+- Save org buffers every 5 seconds of idle time. Necessary for Logseq. Without it, I would jump over to Logseq and make edits without first writing changes in the org file resulting in a fork.
 #+begin_src emacs-lisp :tangle yes
 (setq auto-save-timeout 30)
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 #+end_src
-** Appearance
-Make text easier to read by increasing space between lines.
+** Literate config
+The Doom +literate module will tangle automatically on save. Need to turn this off because:
+1. config.org is set to autosave to avoid losing work when using Roam with Logseq;
+2. Tangle on autosave will often result in config.el in a broken state during config.org edits.
 #+begin_src emacs-lisp :tangle yes
-(add-hook 'org-mode-hook (lambda () (setq line-spacing 10)))
-#+end_src
-
-Fonts
-#+begin_src emacs-lisp :tangle yes
-(setq
-    org-priority-faces '((?A . (:foreground "dim grey"))
-                        (?B . (:foreground "dim grey"))
-                        (?C . (:foreground "dim grey")))
-    org-todo-keyword-faces
-    '(
-            ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
-            ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
-            ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
-            ("PENDING" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("PAUSED" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
-            ("[ ]" :foreground "dim grey")
-            ("[X]" :foreground "grey25")
-            ("CANCELLED" :foreground "grey25" :weight bold :family "DejaVu Sans Mono"))
-   )
-#+end_src
-
-#+begin_src emacs-lisp :tangle yes
-(custom-theme-set-faces
-  'user
-  ;; Use only two alternating colors for heading.
-  '(org-level-1 ((t (:foreground "systemTealColor" :height 1.15))))
-  '(org-level-2 ((t (:weight bold :foreground "systemBrownColor"))))
-  '(org-level-3 ((t (:foreground "systemTealColor"))))
-  '(org-level-4 ((t (:foreground "systemBrownColor"))))
-  '(org-level-5 ((t (:foreground "systemTealColor"))))
-  '(org-level-6 ((t (:foreground "systemBrownColor"))))
-
-  ;; Remove bold from links.
-  ;; "pink1" is here in search of a solution that would undefine the color on a link
-  ;; and inherit.
-  '(link ((t (:weight normal :underline "grey37" :foreground "pink1")))))
-#+end_src
-** Latex
-https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
-#+begin_src emacs-lisp :tangle yes
-  (add-hook 'org-mode-hook 'org-fragtog-mode)
-    ;; Automatically toggle LaTeX fragment previews as cursor enters and exits
-(setq
-  org-format-latex-options '(:scale 2.0))
+(remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
 #+end_src
 
 ** Keymaps
@@ -438,9 +444,8 @@ https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
   :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
   :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
   ;; Insert a heading while currently working a bullet list
-  :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1) (+org/insert-item-below 1))
-
-
+  :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1)
+                                  (+org/insert-item-below 1))
 
   "M-s-SPC"            'org-capture
 
@@ -454,8 +459,7 @@ https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
   "C->"                'org-do-demote
   ;; "s-."                'org-shiftright
   ;; "s->"                'org-shiftleft
-  ;; Previously, "H-l"                "C-u C-u C-c C-x C-l" ;; Preview all latex
-  "H-L"                "C-u C-c C-x C-l" ;; Un-preview all latex
+  "s-k"                'org-insert-link
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
 
@@ -491,6 +495,8 @@ https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
 #+end_src
 
 ** Tags
+Not used.
+#+begin_src emacs-lisp :tangle no
 (setq
   org-use-tag-inheritance nil
   org-agenda-use-tag-inheritance nil
@@ -503,15 +509,18 @@ https://www.fromkk.com/posts/preview-latex-in-org-mode-with-emacs-in-macos/
  )
 #+end_src
 
-** Literate config
-The Doom +literate module will tangle automatically on save. Need to turn this off because:
-1. My org is configured to autosave to avoid losing work when using Roam with Logseq;
-2. Tangle on autosave will often result in config.el in a broken state during config.org edits.
+** Latex
+- =org-format-latex-options= is set in my custom themes.
+- Add this as a hack to get the background color correct:
+  ="C-u C-u C-c C-x C-l"= Will preview all latex
+  ="C-u C-c C-x C-l"= Un-previews all latex.
 
 #+begin_src emacs-lisp :tangle yes
-(remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
+(add-hook 'org-mode-hook 'org-fragtog-mode) ; toggle preview when point enters fragment
 #+end_src
 
+*** Ideas
+- For a serious editing environment for LaTeX mathematical documents, try [[https://github.com/dandavison/xenops][xenops]].
 ** File associations
 This was working before going literate. Not sure it's even needed.
 Open pdfs with emacs.
@@ -631,7 +640,6 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
                                       :unnarrowed t))
       org-roam-dailies-directory "daily")
 #+end_src
-
 ** Daily Template
 #+begin_src emacs-lisp :tangle yes
 (setq org-roam-dailies-capture-templates '(("d" "default" entry
@@ -662,7 +670,18 @@ Dinner invites:
 "))))
 #+end_src
 ** Keymaps
-*** In Roam mode
+*** Available in any mode
+#+begin_src emacs-lisp :tangle yes
+(map!
+    "H-,"         'org-roam-dailies-goto-today
+    "H-."         (cmd! (find-file (expand-file-name "daily.org"
+                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
+    "H-d"         'org-roam-dailies-goto-date
+    "H-["         'org-roam-dailies-goto-previous-note
+    "H-]"         'org-roam-dailies-goto-next-note
+)
+#+end_src
+*** Available in Roam mode
 #+begin_src emacs-lisp :tangle yes
 (map! :map org-roam-mode-map
     ;; Add :n to override assignment in +workspaces
@@ -677,18 +696,21 @@ Dinner invites:
 )
 #+end_src
 
-*** Any mode.
-#+begin_src emacs-lisp :tangle yes
-(map!
-    "H-,"         'org-roam-dailies-goto-today
-    "H-."         (cmd! (find-file (expand-file-name "daily.org"
-                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
-    "H-d"         'org-roam-dailies-goto-date
-    "H-["         'org-roam-dailies-goto-previous-note
-    "H-]"         'org-roam-dailies-goto-next-note
-)
-#+end_src
 * Other Modes
+** C++
+[[https://medium.com/linux-with-michael/emacs-for-c-development-766c8b5866f][Configuring Emacs For C++ Development]]
+- The above link also recommends using Tabnine for autocompletion. I haven't set this up yet.
+- Set (cc +lsp) in your ~/.config/doom/init.el.  Done??
+- The below executable hasn't been =chmod +x= yet.
+#+begin_src emacs-lisp :tangle yes
+(after! ccls
+  (setq ccls-executable "~/bin/ccls"
+        compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (set-lsp-priority! 'ccls 0))
+
+(setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+;; (define-key c++-mode-map [f5] #'compile)
+#+end_src
 ** Haskell
 #+begin_src emacs-lisp :tangle yes
 (map! :map haskell-mode-map
@@ -719,10 +741,16 @@ Dinner invites:
 ;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
  )
 #+end_src
-
-
-** Eww
+** Ledger
 #+begin_src emacs-lisp :tangle yes
+(map! :map ledger-mode-map
+      "C-c C-l" 'ledger-mode-clean-buffer
+      "C-c C-i" 'gh/ledger-insert-date)
+#+end_src
+
+** Unused
+*** Eww
+#+begin_src emacs-lisp :tangle no
 (after! eww
   ;; (load-directory! "my/eww-mode")
   ;; This has global effect.  How to limit to just eww mode?
@@ -735,17 +763,9 @@ Dinner invites:
         ;; "<s-mouse-1>" 'my-eww-open-in-new-window
   )
 #+end_src
-** Ledger
-#+begin_src emacs-lisp :tangle yes
-(map! :map ledger-mode-map
-      "C-c C-l" 'ledger-mode-clean-buffer
-      "C-c C-i" 'gh/ledger-insert-date)
-#+end_src
-
-** Unused
+*** ESS
 #+begin_src emacs-lisp :tangle no
 (map! :map inferior-ess-mode
   :n "M-j" "<- "
   )
 #+end_src
-
