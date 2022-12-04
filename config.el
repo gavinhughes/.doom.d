@@ -40,6 +40,11 @@
   esup-depth 0
   )
 
+;; Finding files
+(setq consult-locate-args "mdfind -name") ;; Instead of `locate`
+;; Would be better to have the below, but need to figure out how to do it.
+;; (setq consult-locate-args (concat "mdfind " args " | grep -v -e /bak/ -e archive"))
+
 ;; Spelling
 (remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
 (setq
@@ -131,10 +136,6 @@
   (clone-indirect-buffer nil 1)
   (+evil/window-move-right))
 
-(defun gh/org-time-stamp-inactive ()
-  (interactive)
-  (org-insert-time-stamp (current-time) nil 1))
-
 (defun gh/org-open-journal ()
   (interactive)
   (org-roam-dailies-goto-today)
@@ -180,9 +181,11 @@
      "C-/"       'undefined ; undo-fu-only-undo. When would I need this?
      "C-?"       'undefined ; undo-fu-only-redo. When would I need this?
                             ; This is assigned thru Maestro as "Open Recent"
+     "s--"       'undefined ; doom/decrease-font-size (use C-- instead.
+                            ; text-scale-increase)
+     "s-="       'undefined ; doom/increase-font-size (use C-= instead)
 
  :leader ":"     'undefined ; M-x
- ;; :leader "b B"   'undefined ; switch-to-buffer
  :leader "."     'undefined ; counsel-find-file. SPC ff
  :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
  :leader "X"     'undefined
@@ -265,6 +268,7 @@
   :leader "j d"   'dired-jump
   :leader "SPC"   'consult-find
   :leader "f d"   'doom/delete-this-file
+  :leader "q f"   'delete-frame
 
   ;; Git
   :leader "g f d"   'magit-diff-buffer-file
@@ -273,9 +277,24 @@
   :leader "m m d"   '+macos/open-in-default-program
   :leader "m m o"   'reveal-in-osx-finder
 
+  :leader "s a"     'consult-ripgrep
+
   ;; `t` Toggle
   :leader "t v"   'visual-fill-column-mode
 )
+
+(defun gh/org-time-stamp-inactive ()
+  (interactive)
+  (org-insert-time-stamp (current-time) nil 1))
+
+ (defun gh/org-insert-hyphen-bullet ()
+  (interactive)
+  (if (or (org-at-item-p) (org-at-heading-p))
+      (progn
+        (end-of-line)
+        (insert "\n- [ ] ")
+        (evil-insert-state))
+    (message "Not on a list item or heading")))
 
 (setq
   org-directory "~/iCloud/OrgNotes/"
@@ -330,6 +349,7 @@
   :niv "s-j"        'org-todo
 
   :leader "i d"     'gh/org-time-stamp-inactive
+  :leader "m -"     'org-toggle-item
   :leader "m m S"   'gh/yank-safari-front-url
   :leader "m m s"   'gh/org-insert-safari-front-link
 
@@ -422,7 +442,6 @@
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview
-#+TAGS:
 :RESOURCES:
 - Record meetings.
 
@@ -431,14 +450,14 @@
 Dinner invites:
 
 [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-[[elisp:(counsel-locate \"Assigned Tasks\")][Assigned Tasks]]
+[[elisp:(consult-locate \"Assigned Tasks\")][Assigned Tasks]]
 [[id:74c82416-8fbb-4eed-9ae0-fe774507a7e3][Stack]]
-[[elisp:(counsel-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
+[[elisp:(consult-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
 [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]]
 
 [[id:c0bf71fa-f63e-46d5-9ae3-1d92e6a1b15c][Journal]]
-[[elisp:(counsel-locate \"Sleep-drink Log\")][Sleep Log]]
-[[elisp:(counsel-locate \"Goal Tracker\")][Goals]]
+[[elisp:(consult-locate \"Sleep-drink Log\")][Sleep Log]]
+[[elisp:(consult-locate \"Goal Tracker\")][Goals]]
 [[id:9f575fc8-6b38-4e33-920d-20940860d924][Self]]
 :END:
 "))))
@@ -472,10 +491,15 @@ Dinner invites:
 (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
 ;; (define-key c++-mode-map [f5] #'compile)
 
-(map! :map haskell-mode-map
- :i "M-s-;" (cmd! (insert "-> "))
- :i "M-s-:" (cmd! (insert "<- "))
- )
+(defun gh/compile ()
+  (interactive)
+  (setq compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (compile compile-command))
+
+
+(map! :map cpp-mode-map
+  :leader "c c" 'gh/compile
+  )
 
 (map! :map elixir-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
@@ -483,6 +507,26 @@ Dinner invites:
  :i "s-:"   (cmd! (insert "=> "))
  :i "M-s-." (cmd! (insert "|> "))
  )
+
+(defun  gh/load-and-run ()
+  (interactive)
+  (haskell-process-load-or-reload)
+  (evil-window-next 0)
+  ;; (haskell-interactive-mode-history-previous 1)
+  )
+
+(map! :map haskell-mode-map
+ :i "C-M-;" (cmd! (insert "-> "))
+ :i "C-M-:" (cmd! (insert "<- "))
+ :i "C-M-=" (cmd! (insert "=> "))
+ :i "C-M-+" (cmd! (insert "<= "))
+
+ :leader "m l" 'gh/load-and-run
+ )
+
+(map! :map ledger-mode-map
+      "C-c C-l" 'ledger-mode-clean-buffer
+      "C-c C-i" 'gh/ledger-insert-date)
 
 (map! :map markdown-mode-map
     ;; Make m-dash behavior consistent with Mac.
@@ -494,6 +538,6 @@ Dinner invites:
 ;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
  )
 
-(map! :map ledger-mode-map
-      "C-c C-l" 'ledger-mode-clean-buffer
-      "C-c C-i" 'gh/ledger-insert-date)
+(add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
+(add-hook 'lisp-mode-hook #'enable-paredit-mode)
+(add-hook 'paredit-mode-hook (lambda () (evil-paredit-mode +1)))

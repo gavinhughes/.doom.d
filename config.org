@@ -1,6 +1,11 @@
 #+TITLE: Config
 #+STARTUP: overview
 
+[2022-11-27 Sun]
+Fix for current theme error:
+cd ~/.emacs.d/.local/straight/repos/straight.el
+git pull origin develop
+
 * Intro
 - [[https://github.com/doomemacs/doomemacs/tree/594d70292dc134d483fbf7a427001250de07b4d2/templates][Latest templates]] of Doom private config files.
   Diff on your current =init.el=.
@@ -55,6 +60,11 @@
   ;; version of `cl-lib', and fails horribly.
   esup-depth 0
   )
+
+;; Finding files
+(setq consult-locate-args "mdfind -name") ;; Instead of `locate`
+;; Would be better to have the below, but need to figure out how to do it.
+;; (setq consult-locate-args (concat "mdfind " args " | grep -v -e /bak/ -e archive"))
 
 ;; Spelling
 (remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
@@ -168,12 +178,6 @@ Fonts
   (clone-indirect-buffer nil 1)
   (+evil/window-move-right))
 #+end_src
-** Org
-#+begin_src emacs-lisp :tangle yes
-(defun gh/org-time-stamp-inactive ()
-  (interactive)
-  (org-insert-time-stamp (current-time) nil 1))
-#+end_src
 ** Org Roam
 #+begin_src emacs-lisp :tangle yes
 (defun gh/org-open-journal ()
@@ -239,29 +243,6 @@ https://stackoverflow.com/a/41969519/173162
   (interactive)
   (insert (format-time-string "%Y/%m/%d")))
 #+end_src
-** Experimental
-https://github.com/hlissner/doom-emacs/issues/581
-#+begin_src emacs-lisp :tangle no
-(defun dlukes/ediff-doom-config (file)
-  "ediff the current config with the examples in doom-emacs-dir
-
-There are multiple config files, so FILE specifies which one to
-diff.
-"
-  (interactive
-    (list (read-file-name "Config file to diff: " doom-private-dir)))
-  (let* ((stem (file-name-base file))
-          (customized-file (format "%s.el" stem))
-          (template-file-regex (format "^%s.example.el$" stem)))
-    (ediff-files
-      (concat doom-private-dir customized-file)
-      (car (directory-files-recursively
-             doom-emacs-dir
-             template-file-regex
-             nil
-             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
-#+end_src
-
 * Global keymaps
 - #idea Global keymaps use =s-=. Mode keymaps use =h-=.
 ** Undefine chords
@@ -284,9 +265,11 @@ Chords that are:
      "C-/"       'undefined ; undo-fu-only-undo. When would I need this?
      "C-?"       'undefined ; undo-fu-only-redo. When would I need this?
                             ; This is assigned thru Maestro as "Open Recent"
+     "s--"       'undefined ; doom/decrease-font-size (use C-- instead.
+                            ; text-scale-increase)
+     "s-="       'undefined ; doom/increase-font-size (use C-= instead)
 
  :leader ":"     'undefined ; M-x
- ;; :leader "b B"   'undefined ; switch-to-buffer
  :leader "."     'undefined ; counsel-find-file. SPC ff
  :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
  :leader "X"     'undefined
@@ -302,6 +285,8 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
 #+end_src
 
 ** Global chords
+- Add a =M-s-<down>= to jump cursor to last line/char and insert mode
+
 #+begin_src emacs-lisp :tangle yes
 (map!
   "H-s"         (cmd! (find-file (expand-file-name "stack.org" org-roam-directory)))
@@ -378,6 +363,7 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
   :leader "j d"   'dired-jump
   :leader "SPC"   'consult-find
   :leader "f d"   'doom/delete-this-file
+  :leader "q f"   'delete-frame
 
   ;; Git
   :leader "g f d"   'magit-diff-buffer-file
@@ -385,6 +371,8 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
   ;; `m` Mac OS
   :leader "m m d"   '+macos/open-in-default-program
   :leader "m m o"   'reveal-in-osx-finder
+
+  :leader "s a"     'consult-ripgrep
 
   ;; `t` Toggle
   :leader "t v"   'visual-fill-column-mode
@@ -400,6 +388,22 @@ C-M-<space>     Things quick capture
 #+end_src
 
 * Org Mode
+** Functions
+#+begin_src emacs-lisp :tangle yes
+(defun gh/org-time-stamp-inactive ()
+  (interactive)
+  (org-insert-time-stamp (current-time) nil 1))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(defun gh/org-insert-checkbox ()
+  "Insert a checkbox list item."
+  (interactive)
+  (unless (sp-point-in-blank-line)
+    (evil-insert-newline-below))
+  (insert "- [ ] ")
+  (evil-insert-state))
+#+end_src
 ** Config
 - Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
 #+begin_src emacs-lisp :tangle no
@@ -472,6 +476,8 @@ The Doom +literate module will tangle automatically on save. Need to turn this o
   :niv "s-j"        'org-todo
 
   :leader "i d"     'gh/org-time-stamp-inactive
+  :leader "i c"     'gh/org-insert-checkbox
+  :leader "m -"     'org-toggle-item
   :leader "m m S"   'gh/yank-safari-front-url
   :leader "m m s"   'gh/org-insert-safari-front-link
 
@@ -648,7 +654,6 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview
-#+TAGS:
 :RESOURCES:
 - Record meetings.
 
@@ -657,14 +662,14 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 Dinner invites:
 
 [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-[[elisp:(counsel-locate \"Assigned Tasks\")][Assigned Tasks]]
+[[elisp:(consult-locate \"Assigned Tasks\")][Assigned Tasks]]
 [[id:74c82416-8fbb-4eed-9ae0-fe774507a7e3][Stack]]
-[[elisp:(counsel-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
+[[elisp:(consult-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
 [[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]]
 
 [[id:c0bf71fa-f63e-46d5-9ae3-1d92e6a1b15c][Journal]]
-[[elisp:(counsel-locate \"Sleep-drink Log\")][Sleep Log]]
-[[elisp:(counsel-locate \"Goal Tracker\")][Goals]]
+[[elisp:(consult-locate \"Sleep-drink Log\")][Sleep Log]]
+[[elisp:(consult-locate \"Goal Tracker\")][Goals]]
 [[id:9f575fc8-6b38-4e33-920d-20940860d924][Self]]
 :END:
 "))))
@@ -711,13 +716,19 @@ Dinner invites:
 (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
 ;; (define-key c++-mode-map [f5] #'compile)
 #+end_src
-** Haskell
+
+Convenient compile in C++.
 #+begin_src emacs-lisp :tangle yes
-(map! :map haskell-mode-map
- :i "M-s-;" (cmd! (insert "-> "))
- :i "M-s-:" (cmd! (insert "<- "))
- )
- #+end_src
+(defun gh/compile ()
+  (interactive)
+  (setq compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (compile compile-command))
+
+
+(map! :map cpp-mode-map
+  :leader "c c" 'gh/compile
+  )
+#+end_src
 
 ** Elixir and Phoenix
 #+begin_src emacs-lisp :tangle yes
@@ -727,6 +738,57 @@ Dinner invites:
  :i "s-:"   (cmd! (insert "=> "))
  :i "M-s-." (cmd! (insert "|> "))
  )
+#+end_src
+
+** Haskell
+#+begin_src emacs-lisp :tangle yes
+(defun  gh/load-and-run ()
+  (interactive)
+  (haskell-process-load-or-reload)
+  (evil-window-next 0)
+  ;; (haskell-interactive-mode-history-previous 1)
+  )
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(map! :map haskell-mode-map
+ :i "C-M-;" (cmd! (insert "-> "))
+ :i "C-M-:" (cmd! (insert "<- "))
+ :i "C-M-=" (cmd! (insert "=> "))
+ :i "C-M-+" (cmd! (insert "<= "))
+
+ :leader "m l" 'gh/load-and-run
+ )
+ #+end_src
+
+** Ledger
+#+begin_src emacs-lisp :tangle yes
+(map! :map ledger-mode-map
+      "C-c C-l" 'ledger-mode-clean-buffer
+      "C-c C-i" 'gh/ledger-insert-date)
+#+end_src
+
+Ledger stores custom reports in =custom.el=, but the file does not persist so losing all reports. This should be set in =custom-set-variables=, but see the note below.  Find a work around.
+#+begin_src elisp :tangle no
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+ '(ledger-reports
+   '(
+     ("bal" "%(binary) -f %(ledger-file) bal")
+     ("reg" "%(binary) -f %(ledger-file) reg")
+     ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
+     ("account" "%(binary) -f %(ledger-file) reg %(account)")
+     ("Annulment - reg" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger reg \"Expense\" and %case=2015-15066")
+     ("Annulment - bal" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger bal \"Expense\" and %case=2015-15066")
+     ("Spec Perf - reg" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger reg \"Expense\" and %case=2018-15313")
+     ("Spec Perf - Bal" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger bal \"Expense\" and %case=2018-15313")
+     ))
 #+end_src
 
 ** Markdown
@@ -741,13 +803,6 @@ Dinner invites:
 ;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
  )
 #+end_src
-** Ledger
-#+begin_src emacs-lisp :tangle yes
-(map! :map ledger-mode-map
-      "C-c C-l" 'ledger-mode-clean-buffer
-      "C-c C-i" 'gh/ledger-insert-date)
-#+end_src
-
 ** Unused
 *** Eww
 #+begin_src emacs-lisp :tangle no
@@ -768,4 +823,35 @@ Dinner invites:
 (map! :map inferior-ess-mode
   :n "M-j" "<- "
   )
+#+end_src
+* Experimental
+Prune this occaisionally.
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
+(add-hook 'lisp-mode-hook #'enable-paredit-mode)
+(add-hook 'paredit-mode-hook (lambda () (evil-paredit-mode +1)))
+#+end_src
+
+** Functions
+https://github.com/hlissner/doom-emacs/issues/581
+#+begin_src emacs-lisp :tangle no
+(defun dlukes/ediff-doom-config (file)
+  "ediff the current config with the examples in doom-emacs-dir
+
+There are multiple config files, so FILE specifies which one to
+diff.
+"
+  (interactive
+    (list (read-file-name "Config file to diff: " doom-private-dir)))
+  (let* ((stem (file-name-base file))
+          (customized-file (format "%s.el" stem))
+          (template-file-regex (format "^%s.example.el$" stem)))
+    (ediff-files
+      (concat doom-private-dir customized-file)
+      (car (directory-files-recursively
+             doom-emacs-dir
+             template-file-regex
+             nil
+             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
 #+end_src
