@@ -1,11 +1,6 @@
 #+TITLE: Config
 #+STARTUP: overview
 
-[2022-11-27 Sun]
-Fix for current theme error:
-cd ~/.emacs.d/.local/straight/repos/straight.el
-git pull origin develop
-
 * Intro
 - [[https://github.com/doomemacs/doomemacs/tree/594d70292dc134d483fbf7a427001250de07b4d2/templates][Latest templates]] of Doom private config files.
   Diff on your current =init.el=.
@@ -87,7 +82,7 @@ git pull origin develop
 
 (add-to-list 'default-frame-alist '(fullscreen . maximized)) ; Maximize frame at startup
 #+end_src
-* Themes and text
+* Themes and font
 - My themes are in $DOOMDIR/themes.
 
 ** Toggle light/dark themes
@@ -146,10 +141,10 @@ Fonts
     '(
             ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
             ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
-            ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("TODO" :foreground "#98be65" :weight bold :family "DejaVu Sans Mono")
             ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
-            ("PENDING" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("PENDING" :foreground "DarkGreen" :weight bold :family "DejaVu Sans Mono")
             ("PAUSED" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("[ ]" :foreground "dim grey")
             ("[X]" :foreground "grey25")
@@ -297,7 +292,7 @@ Chords that are:
  :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
  :leader "X"     'undefined
  :leader "b N"   'undefined
- :leader "u"     'undefined ;; Universal argument
+ :leader "u"     'undefined ; Universal argument
  )
 #+end_src
 
@@ -467,6 +462,13 @@ The Doom +literate module will tangle automatically on save. Need to turn this o
 #+end_src
 
 ** Keymaps
+When dwim-ing on a filesystem link with filetype like `.numbers` in the minibuffer, the file is not opened but instead emacs descends into the package with dired. This quick hack gets me quickly to shell to add `open` to the path.
+#+begin_src emacs-lisp :tangle yes
+(map! :map minibuffer-local-map
+  "s-<return>" "C-; !"
+  )
+#+end_src
+
 #+begin_src emacs-lisp :tangle yes
 (map! :map org-mode-map
   :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
@@ -569,8 +571,8 @@ Also want to be able to open Numbers files, currently this dives into the bundle
 
 ** Images
 #+begin_src emacs-lisp :tangle no
-  ;; org-startup-with-inline-images 0
-  ;; Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
+  ;;Can be set per file with #+STARTUP: ‘inlineimages’ or ‘noinlineimages’
+  org-startup-with-inline-images 0
 #+end_src
 
  org-download is not great.
@@ -677,7 +679,6 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 "#+TITLE: %<%A, %-m/%-d/%y>
 \#+STARTUP: overview
 - [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-- [[elisp:(consult-locate 'Assigned Tasks')][Assigned Tasks]]
 -
 /block/
 "))))
