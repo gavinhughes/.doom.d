@@ -15,6 +15,7 @@
 * Startup and load
 #+begin_src emacs-lisp :tangle yes
 ;;; config.el -*- lexical-binding: t; -*-
+;;; The above must be the first line of the file.
 
 ;; Start the Emacs server from this instance so that all emacsclient calls are routed here.
 ;; (if (server-running-p ()) nil (server-start))
@@ -56,11 +57,11 @@
   esup-depth 0
   )
 
-; Use evil in minibuffer. Added to enable 'gh/consult-ripgrep-tag
-; to delete backwards and add \#tag.
+;; Use evil in minibuffer to support 'gh/consult-ripgrep-tag
+;; to delete backwards and add \#tag.
+;; TODO Why do we need evil for this? Any other value for having evil in minibuffer?
 (setq evil-want-minibuffer t)
 
-;; Finding files
 (setq consult-locate-args "mdfind -name") ;; Instead of `locate`
 ;; Would be better to have the below, but need to figure out how to do it.
 ;; (setq consult-locate-args (concat "mdfind " args " | grep -v -e /bak/ -e archive"))
@@ -72,13 +73,14 @@
    ;; ispell-program-name "hunspell"
    )
 
-(setq projectile-indexing-method 'native)
-(add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
+;; [2023-01-17 Tue] I think I fixed this by adding "*archive" to to gitignore global and using ripgrep for searching.
+;; (setq projectile-indexing-method 'native)
+;; (add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
 ;; (add-to-list 'projectile-globally-ignored-directories "*bak")
-  ;; Ignores aren't working.  Why?  [2021-12-28 Tue]
-  ;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
+;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
+
+;; ‘nil’ sets major mode to equal previous current buffer.
 (setq-default major-mode 'org-mode)
-  ;; If set to ‘nil’, the major mode is taken from the previously current buffer.
 
 (add-to-list 'default-frame-alist '(fullscreen . maximized)) ; Maximize frame at startup
 #+end_src
@@ -171,16 +173,10 @@ Fonts
 #+end_src
 * My functions
 ** Search
-#+begin_src elisp :tangle no
-
-#+end_src
-
-
 #+begin_src elisp :tangle yes
 (defun gh/consult-ripgrep-tag ()
-  "For keybinding quick access to consult-ripgrep
-Then second press of chord sets up for searching with
-a tag: \\#tag"
+  "Keybinding quick access to consult-ripgrep.
+Double press search edits to search with escaped tag: \\#tag"
   (interactive)
   (if (minibufferp)
       (progn
@@ -368,8 +364,8 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
   :ni "s-O"       'evil-open-above
       "s-<up>"    '+evil/insert-newline-above
       "s-<down>"  '+evil/insert-newline-below
-      ;; "M-<return>" '+evil/insert-newline-below
-      "M-<return>"  '+default/newline-below
+      ;; Took this out because conflict with minibuffer immediate done on selection.
+      ;; "M-<return>"  '+default/newline-below
   ;; was "H-<return>" with the following note:
    ;; todo. write about the reason for this. Has to do with org mode conflict 's-<return>'
   ;; :ni "s-<return>" (cmd! (message "Use <H-return>"))
@@ -489,8 +485,6 @@ When dwim-ing on a filesystem link with filetype like `.numbers` in the minibuff
   "H-a"                'gh/open-or-pop-to-agenda
   "C-<"                'org-do-promote
   "C->"                'org-do-demote
-  ;; "s-."                'org-shiftright
-  ;; "s->"                'org-shiftleft
   "s-k"                'org-insert-link
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
@@ -843,6 +837,20 @@ Ledger stores custom reports in =custom.el=, but the file does not persist so lo
 #+end_src
 * Experimental
 Prune this occaisionally.
+
+Open with
+https://github.com/garberw/openwith
+TODO - not working...
+#+begin_src emacs-lisp :tangle yes
+(openwith-mode 1)
+(setq openwith-associations
+            (list
+             (list (openwith-make-extension-regexp
+                    '("docx" "doc"))
+                   "Microsoft Word"
+                   '(file))
+             ))
+#+end_src
 
 #+begin_src emacs-lisp :tangle yes
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
