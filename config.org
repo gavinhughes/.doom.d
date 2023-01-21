@@ -1,9 +1,10 @@
 #+TITLE: Config
 #+STARTUP: overview
+#+PROPERTY: header-args :results none :tangle yes
 
 * Intro
-- [[https://github.com/doomemacs/doomemacs/tree/594d70292dc134d483fbf7a427001250de07b4d2/templates][Latest templates]] of Doom private config files.
-  Diff on your current =init.el=.
+- Latest Doom private config file templates are [[https://github.com/doomemacs/doomemacs/tree/594d70292dc134d483fbf7a427001250de07b4d2/templates][here]]. Diff =init.el= to see what's new.
+
 * Ideas
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
 - Halp runs programs in the Emacs buffer holding their source, seeing their output inline, interactively. Probably not necessary with org-mode, which has literate programming built in.
@@ -13,10 +14,13 @@
 - If emacs path is not the same is not the same as Mac path, try [[https://github.com/purcell/exec-path-from-shell][this.]]
 -
 * Startup and load
-#+begin_src emacs-lisp :tangle yes
-;;; config.el -*- lexical-binding: t; -*-
-;;; The above must be the first line of the file.
 
+Required first line for =config.el=.
+#+begin_src emacs-lisp
+;;; config.el -*- lexical-binding: t; -*-
+#+end_src
+
+#+begin_src emacs-lisp
 ;; Start the Emacs server from this instance so that all emacsclient calls are routed here.
 ;; (if (server-running-p ()) nil (server-start))
 
@@ -40,7 +44,7 @@
   doom-scratch-initial-major-mode 'org-mode
   undo-limit 80000000                         ; Raise undo-limit to 80Mb
   evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
-  auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+  auto-save-default t
   inhibit-compacting-font-caches t            ; When there are lots of glyphs, keep them in memory
   truncate-string-ellipsis "…"                ; Use unicode ellipsis
   global-visual-line-mode t                   ; Visual line navigation everywhere.
@@ -84,11 +88,12 @@
 
 (add-to-list 'default-frame-alist '(fullscreen . maximized)) ; Maximize frame at startup
 #+end_src
+
 * Themes and font
 - My themes are in $DOOMDIR/themes.
 
 ** Toggle light/dark themes
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (defvar dark-theme  'gav-one)
 (defvar light-theme 'gav-one-light)
 (defun toggle-theme ()
@@ -103,7 +108,7 @@
 - You could also try setting when the system inverts colors. This would get you started but needs to be changed for invert, not mode:
     https://www.reddit.com/r/emacs/comments/hejsqm/is_there_a_way_to_detect_lightdark_mode_on_mac/
 ** Font faces and text
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 ;; Make text easier to read by increasing space between lines.
 (add-hook 'org-mode-hook (lambda () (setq line-spacing 10)))
 
@@ -125,7 +130,7 @@
 (add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (setq
   doom-font (font-spec :family "DejaVu Sans Mono" :size 16)
   doom-variable-pitch-font (font-spec :family "DejaVu Serif" :size 18)
@@ -134,7 +139,7 @@
 #+end_src
 
 Fonts
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (setq
     org-priority-faces '((?A . (:foreground "dim grey"))
                         (?B . (:foreground "dim grey"))
@@ -154,7 +159,7 @@ Fonts
    )
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (custom-theme-set-faces
   'user
   ;; Use only two alternating colors for heading.
@@ -173,7 +178,7 @@ Fonts
 #+end_src
 * My functions
 ** Search
-#+begin_src elisp :tangle yes
+#+begin_src elisp
 (defun gh/consult-ripgrep-tag ()
   "Keybinding quick access to consult-ripgrep.
 Double press search edits to search with escaped tag: \\#tag"
@@ -185,14 +190,14 @@ Double press search edits to search with escaped tag: \\#tag"
     (consult-ripgrep)))
 #+end_src
 ** Buffers
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (defun gh/clone-indirect-buffer-vertically ()
   (interactive)
   (clone-indirect-buffer nil 1)
   (+evil/window-move-right))
 #+end_src
 ** Org Roam
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (defun gh/org-open-journal ()
   (interactive)
   (org-roam-dailies-goto-today)
@@ -231,7 +236,7 @@ https://stackoverflow.com/a/41969519/173162
                        )))
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (setq org-agenda-custom-commands
       '(("h" . "Pending + Name tag searches") ; describe prefix "h"
         ("hk" search "#pending")))
@@ -251,19 +256,19 @@ https://stackoverflow.com/a/41969519/173162
     ;; org-agenda-custom-commands))
 #+end_src
 ** Ledger
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (defun gh/ledger-insert-date ()
   (interactive)
   (insert (format-time-string "%Y/%m/%d")))
 #+end_src
-* Global keymaps
+* Keymaps
 - #idea Global keymaps use =s-=. Mode keymaps use =h-=.
 ** Undefine chords
 Chords that are:
 1. Pre-defined but unused; or
 2. Reassigned and undefined explicitly for clarity or to prevent conflicts.
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map!
      "s-x"       'undefined ; execute-extended-command
      "C-x b"     'undefined ; switch-to-buffer
@@ -298,10 +303,17 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
  :i  "C-h"       'undefined ; org-beginning-of-line.
 #+end_src
 
-** Global chords
+** Reserved for MacOS
+Don't use these.
+#+begin_src
+C-M-<return>    Magnet maximize window
+C-M-<space>     Things quick capture
+#+end_src
+
+** Global
 - Add a =M-s-<down>= to jump cursor to last line/char and insert mode
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map!
   "H-s"         (cmd! (find-file (expand-file-name "stack.org" org-roam-directory)))
   "H-c"         (cmd! (find-file "/Users/gavinhughes/.doom.d/config.org"))
@@ -380,7 +392,6 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
   :leader "b c"   'gh/clone-indirect-buffer-vertically
   :leader "j d"   'dired-jump
   :leader "j j"   (cmd! (find-file "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam/Journal.org"))
-  :leader "SPC"   'consult-find
   :leader "f d"   'doom/delete-this-file
   :leader "q f"   'delete-frame
 
@@ -396,76 +407,15 @@ Already have =C-a= for this. Return =C-h= to the vanilla help leader.
 )
 #+end_src
 
-
-** Cords used in MacOS
-Don't use these.
-#+begin_src
-C-M-<return>    Magnet maximize window
-C-M-<space>     Things quick capture
-#+end_src
-
-* Org Mode
-** Functions
-#+begin_src emacs-lisp :tangle yes
-(defun gh/org-time-stamp-inactive ()
-  (interactive)
-  (org-insert-time-stamp (current-time) nil 1))
-#+end_src
-
-#+begin_src emacs-lisp :tangle yes
-(defun gh/org-insert-checkbox ()
-  "Insert a checkbox list item."
-  (interactive)
-  (unless (sp-point-in-blank-line)
-    (evil-insert-newline-below))
-  (insert "- [ ] ")
-  (evil-insert-state))
-#+end_src
-** Config
-- Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
-#+begin_src emacs-lisp :tangle no
-(add-load-path! "my/org-mode")
-(require 'org-mac-link)
-#+end_src
-
-#+begin_src emacs-lisp :tangle yes
-(setq
-  org-directory "~/iCloud/OrgNotes/"
-  org-archive-location "archive.org::* From %s"
-  org-attach-id-dir (concat org-directory "attachments/")
-  org-ellipsis " ▼ "
-  org-cycle-separator-lines 3
-  org-special-ctrl-k t ; What's this?
-  ;; Not working 7/13/21
-  org-ctrl-k-protect-subtree t
-  org-blank-before-new-entry '((heading . nil)
-                               (plain-list-item . nil))
-  org-appear-trigger 'on-change)
-    ;; Other options: https://github.com/awth13/org-appear/blob/master/org-appear.el
-#+end_src
-
-- Save org buffers every 5 seconds of idle time. Necessary for Logseq. Without it, I would jump over to Logseq and make edits without first writing changes in the org file resulting in a fork.
-#+begin_src emacs-lisp :tangle yes
-(setq auto-save-timeout 30)
-(add-hook 'auto-save-hook 'org-save-all-org-buffers)
-#+end_src
-** Literate config
-The Doom +literate module will tangle automatically on save. Need to turn this off because:
-1. config.org is set to autosave to avoid losing work when using Roam with Logseq;
-2. Tangle on autosave will often result in config.el in a broken state during config.org edits.
-#+begin_src emacs-lisp :tangle yes
-(remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
-#+end_src
-
-** Keymaps
+** Org Mode
 When dwim-ing on a filesystem link with filetype like `.numbers` in the minibuffer, the file is not opened but instead emacs descends into the package with dired. This quick hack gets me quickly to shell to add `open` to the path.
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map! :map minibuffer-local-map
   "s-<return>" "C-; !"
   )
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map! :map org-mode-map
   :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
   :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
@@ -522,6 +472,89 @@ When dwim-ing on a filesystem link with filetype like `.numbers` in the minibuff
 ;;     (apply #'org-roam-node-insert args)))
 #+end_src
 
+** Org Roam
+Global scope.
+#+begin_src emacs-lisp
+(map!
+    "H-,"         'org-roam-dailies-goto-today
+    "H-."         (cmd! (find-file (expand-file-name "daily.org"
+                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
+    "H-d"         'org-roam-dailies-goto-date
+    "H-["         'org-roam-dailies-goto-previous-note
+    "H-]"         'org-roam-dailies-goto-next-note
+
+  :leader "SPC"   'org-roam-node-find
+)
+#+end_src
+
+org-roam scope.
+#+begin_src emacs-lisp
+(map! :map org-roam-mode-map
+    ;; Add :n to override assignment in +workspaces
+        "<f7>"        'org-tags-view
+        "<f9>"        'org-agenda-list
+
+        "s-I"         'org-roam-node-insert
+
+    ;; `r` org-roam
+    :leader "r i"     'org-roam-node-insert
+    :leader "r b"     'org-roam-buffer-toggle
+)
+#+end_src
+
+* Org Mode
+** Functions
+#+begin_src emacs-lisp
+(defun gh/org-time-stamp-inactive ()
+  (interactive)
+  (org-insert-time-stamp (current-time) nil 1))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun gh/org-insert-checkbox ()
+  "Insert a checkbox list item."
+  (interactive)
+  (unless (sp-point-in-blank-line)
+    (evil-insert-newline-below))
+  (insert "- [ ] ")
+  (evil-insert-state))
+#+end_src
+** Config
+- Is there a [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#usingloading-local-packages][better way]] to load using packages.el?
+#+begin_src emacs-lisp :tangle no
+(add-load-path! "my/org-mode")
+(require 'org-mac-link)
+#+end_src
+
+#+begin_src emacs-lisp
+(setq
+  org-directory "~/iCloud/OrgNotes/"
+  org-archive-location "archive.org::* From %s"
+  org-attach-id-dir (concat org-directory "attachments/")
+  org-ellipsis " ▼ "
+  org-cycle-separator-lines 3
+  org-special-ctrl-k t ; What's this?
+  ;; Not working 7/13/21
+  org-ctrl-k-protect-subtree t
+  org-blank-before-new-entry '((heading . nil)
+                               (plain-list-item . nil))
+  org-appear-trigger 'on-change)
+    ;; Other options: https://github.com/awth13/org-appear/blob/master/org-appear.el
+#+end_src
+
+- Save org buffers every 5 seconds of idle time. Necessary for Logseq. Without it, I would jump over to Logseq and make edits without first writing changes in the org file resulting in a fork.
+#+begin_src emacs-lisp
+(setq auto-save-timeout 30)
+(add-hook 'auto-save-hook 'org-save-all-org-buffers)
+#+end_src
+** Literate config
+The Doom +literate module will tangle automatically on save. Need to turn this off because:
+1. config.org is set to autosave to avoid losing work when using Roam with Logseq;
+2. Tangle on autosave will often result in config.el in a broken state during config.org edits.
+#+begin_src emacs-lisp
+(remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
+#+end_src
+
 ** Tags
 Not used.
 #+begin_src emacs-lisp :tangle no
@@ -543,7 +576,7 @@ Not used.
   ="C-u C-u C-c C-x C-l"= Will preview all latex
   ="C-u C-c C-x C-l"= Un-previews all latex.
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (add-hook 'org-mode-hook 'org-fragtog-mode) ; toggle preview when point enters fragment
 #+end_src
 
@@ -577,7 +610,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
  Using the 'attach method, files are inserted in the org-attach-id directory under the file property.
  Limitations:
  - Images will not insert unless under a heading.
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (require 'org-download)
 (after! org
   (setq
@@ -596,7 +629,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 ;; Installed. How to use it? [2021-12-13 Mon]
 ;; (require 'org-roam-protocol)
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (use-package! org-mac-link
   ;; Current version of Outlook doesn't support direct links to messages.
     :after org
@@ -625,7 +658,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 ;;         :unnarrowed t)))
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (add-hook 'org-mode-hook #'org-appear-mode)
 (after! org
   ;; (load-directory! "my/org-mode")
@@ -657,7 +690,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 
 * Roam
 ** Config
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (setq org-roam-v2-ack t
       org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
       org-roam-db-autosync-mode t
@@ -665,7 +698,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
       org-roam-dailies-directory "daily")
 #+end_src
 ** Daily Template
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (setq org-roam-dailies-capture-templates '(("d" "default" entry
                                             "* %?"
                                         :target (file+head
@@ -678,46 +711,19 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 "))))
 #+end_src
 ** Capture Template
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (setq org-roam-capture-templates
     '(("d" "default" plain "%?"
         :target (file+head "${slug}.org" "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
         :unnarrowed t)))
 #+end_src
-** Keymaps
-*** Available in any mode
-#+begin_src emacs-lisp :tangle yes
-(map!
-    "H-,"         'org-roam-dailies-goto-today
-    "H-."         (cmd! (find-file (expand-file-name "daily.org"
-                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
-    "H-d"         'org-roam-dailies-goto-date
-    "H-["         'org-roam-dailies-goto-previous-note
-    "H-]"         'org-roam-dailies-goto-next-note
-)
-#+end_src
-*** Available in Roam mode
-#+begin_src emacs-lisp :tangle yes
-(map! :map org-roam-mode-map
-    ;; Add :n to override assignment in +workspaces
-        "<f7>"        'org-tags-view
-        "<f9>"        'org-agenda-list
-
-  "s-I"                'org-roam-node-insert
-        ;; `r` org-roam
-    :leader "r r"     'org-roam-node-find
-    :leader "r i"     'org-roam-node-insert
-    :leader "r b"     'org-roam-buffer-toggle
-)
-#+end_src
-
 * Other Modes
 ** C++
 [[https://medium.com/linux-with-michael/emacs-for-c-development-766c8b5866f][Configuring Emacs For C++ Development]]
 - The above link also recommends using Tabnine for autocompletion. I haven't set this up yet.
 - Set (cc +lsp) in your ~/.config/doom/init.el.  Done??
 - The below executable hasn't been =chmod +x= yet.
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (after! ccls
   (setq ccls-executable "~/bin/ccls"
         compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
@@ -728,7 +734,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 #+end_src
 
 Convenient compile in C++.
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (defun gh/compile ()
   (interactive)
   (setq compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
@@ -741,7 +747,7 @@ Convenient compile in C++.
 #+end_src
 
 ** Elixir and Phoenix
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map! :map elixir-mode-map
  :i "M-s-;" (cmd! (insert "-> "))
  :i "M-s-:" (cmd! (insert "<- "))
@@ -751,7 +757,7 @@ Convenient compile in C++.
 #+end_src
 
 ** Haskell
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (defun  gh/load-and-run ()
   (interactive)
   (haskell-process-load-or-reload)
@@ -760,7 +766,7 @@ Convenient compile in C++.
   )
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map! :map haskell-mode-map
  :i "C-M-;" (cmd! (insert "-> "))
  :i "C-M-:" (cmd! (insert "<- "))
@@ -773,7 +779,7 @@ Convenient compile in C++.
  #+end_src
 
 ** Ledger
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map! :map ledger-mode-map
       "C-c C-l" 'ledger-mode-clean-buffer
       "C-c C-i" 'gh/ledger-insert-date)
@@ -803,7 +809,7 @@ Ledger stores custom reports in =custom.el=, but the file does not persist so lo
 #+end_src
 
 ** Markdown
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (map! :map markdown-mode-map
     ;; Make m-dash behavior consistent with Mac.
     "M--" 'undefine
@@ -836,12 +842,12 @@ Ledger stores custom reports in =custom.el=, but the file does not persist so lo
   )
 #+end_src
 * Experimental
-Prune this occaisionally.
+Prune this occasionally.
 
 Open with
 https://github.com/garberw/openwith
 TODO - not working...
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (openwith-mode 1)
 (setq openwith-associations
             (list
@@ -852,7 +858,7 @@ TODO - not working...
              ))
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'paredit-mode-hook (lambda () (evil-paredit-mode +1)))
