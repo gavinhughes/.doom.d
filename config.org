@@ -12,7 +12,7 @@
 - Use =fd= instead of =find= or =locate=
    [[https://github.com/sharkdp/fd][fd: A simple, fast and user-friendly alternative to 'find']]
 - If emacs path is not the same is not the same as Mac path, try [[https://github.com/purcell/exec-path-from-shell][this.]]
--
+
 * Startup and load
 
 Required first line for =config.el=.
@@ -179,6 +179,8 @@ Fonts
 * My functions
 ** Search
 #+begin_src elisp
+(setq consult-ripgrep-args "rg --sortr path --null --line-buffered --color=never --max-columns=1000 --path-separator /   --smart-case --no-heading --line-number --multiline --type org .")
+
 (defun gh/consult-ripgrep-tag ()
   "Keybinding quick access to consult-ripgrep.
 Double press search edits to search with escaped tag: \\#tag"
@@ -433,9 +435,14 @@ When dwim-ing on a filesystem link with filetype like `.numbers` in the minibuff
   "H-R"                '+org/refile-to-file
   ;; "H-a"                'org-archive-subtree
   "H-a"                'gh/open-or-pop-to-agenda
+
   "C-<"                'org-do-promote
   "C->"                'org-do-demote
+  "C-M-<"              'org-promote-subtree
+  "C-M->"              'org-demote-subtree
+
   "s-k"                'org-insert-link
+
   "C-M-y"              'org-download-screenshot
   "C-M-S-y"            'org-download-yank
 
@@ -705,7 +712,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 \#+STARTUP: overview
-- [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+- [[shell:open \"https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG\" -a Firefox.app][Timesheet]]
 -
 /block/
 "))))
