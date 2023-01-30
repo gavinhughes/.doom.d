@@ -209,6 +209,35 @@ Double press search edits to search with escaped tag: \\#tag"
   (evil-goto-line)
   )
 #+end_src
+
+I omit adding entries to my org roam database when the node is primarily for a link, not a note that I will frequently pull up. This is typically the case for deeply nested headings. I may want a link to that heading elsewhere in my notes, but I don't want the heading to appear when I call =org-roam-node-find=.
+
+One way to solve this would be to have separate =org-roam-node-find= that also lists excluded nodes. 'Excluded' when then probably be the wrong term. But in the db, there could be two (or more) level hierarchy of node importance. This feature would exist, but would not effect those who choose not to use it. It would be a 'power user' feature.
+
+Here's the current signature. How would this need to be modified?
+#+begin_src helpful
+(org-roam-node-find &optional OTHER-WINDOW INITIAL-INPUT FILTER-FN PRED &key TEMPLATES)
+#+end_src
+
+#+begin_src emacs-lisp
+(defun gh/org-roam-toggle-exclude ()
+  "Toggle excluding the current node from the Roam db."
+  (interactive)
+  (let ((node (org-roam-node-at-point 'assert)))
+    (if (gh/get-org-property-at-point "ROAM_EXCLUDE")
+        (progn
+            (org-roam-property-remove "ROAM_EXCLUDE" "t")
+            ;; TODO Sync db?
+            (message "Node included"))
+      (progn
+        (org-roam-property-add "ROAM_EXCLUDE" "t")
+        ;; TODO Sync db?
+        (message "Node exluded")))))
+
+(defun gh/get-org-property-at-point (property)
+  (let ((properties (org-entry-properties nil property)))
+    (message (cdr (assoc property properties)))))
+#+end_src
 ** Agenda
 Simpler way of doing recursive search of org files:
 https://stackoverflow.com/a/41969519/173162
@@ -490,7 +519,7 @@ Global scope.
     "H-["         'org-roam-dailies-goto-previous-note
     "H-]"         'org-roam-dailies-goto-next-note
 
-  :leader "SPC"   'org-roam-node-find
+  :leader "SPC"   'org-roam-node-find  ; Also on "s-;"
 )
 #+end_src
 
@@ -506,6 +535,7 @@ org-roam scope.
     ;; `r` org-roam
     :leader "r i"     'org-roam-node-insert
     :leader "r b"     'org-roam-buffer-toggle
+    :leader "r x"     'gh/org-roam-toggle-exclude
 )
 #+end_src
 
