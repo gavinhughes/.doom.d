@@ -4,7 +4,6 @@
 
 * Intro
 - Latest Doom private config file templates are [[https://github.com/doomemacs/doomemacs/tree/594d70292dc134d483fbf7a427001250de07b4d2/templates][here]]. Diff =init.el= to see what's new.
-
 * Ideas
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
 - Halp runs programs in the Emacs buffer holding their source, seeing their output inline, interactively. Probably not necessary with org-mode, which has literate programming built in.
@@ -376,7 +375,7 @@ C-M-<space>     Things quick capture
   :i "M--" "–" ;; m-dash. Consistent with Mac.
 
   ;; Buffers
-  "s-n"            (cmd! (evil-buffer-new 1 nil))
+  "s-n"            '+default/new-buffer
   "M-s-k"          'kill-current-buffer
   "M-s-K"          'kill-buffer-and-window
   "s-,"            '+vertico/switch-workspace-buffer
@@ -565,7 +564,7 @@ org-roam scope.
 
 #+begin_src emacs-lisp
 (setq
-  org-directory "~/iCloud/OrgNotes/"
+  org-directory "/Users/gavinhughes/Library/Mobile Documents/iCloud~com~logseq~logseq/Documents/OrgNotes"
   org-archive-location "archive.org::* From %s"
   org-attach-id-dir (concat org-directory "attachments/")
   org-ellipsis " ▼ "
@@ -725,14 +724,27 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
       ))))
 #+end_src
 
-* Roam
+* Org Roam
 ** Config
+ [2023-02-26 Sun]
+ Added this because
+=/Users/gavinhughes/.emacs.d/.local/straight/build-28.2/emacsql/emacsql-sqlite-builtin.el=
+calls =require 'sqlite= but fails.
 #+begin_src emacs-lisp
-(setq org-roam-v2-ack t
-      org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
-      org-roam-db-autosync-mode t
+(provide 'sqlite)
+#+end_src
 
-      org-roam-dailies-directory "daily")
+#+begin_src emacs-lisp
+(setq org-roam-v2-ack t)
+(setq org-roam-directory org-directory)
+(setq org-roam-dailies-directory "journals/")
+(org-roam-db-autosync-mode)
+#+end_src
+
+Logseq on mobile current solution for accessing Org Roam on mobile. The following module converts notes created with logseq into org-roam nodes. [[https://coredumped.dev/2021/05/26/taking-org-roam-everywhere-with-logseq/][source]]
+*** TODO Fix this so it works on startup!
+#+begin_src emacs-lisp
+;; (after! org-roam (load! "~/.doom.d/modules/org-roam-logseq.el"))
 #+end_src
 ** Daily Template
 #+begin_src emacs-lisp
@@ -741,9 +753,10 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
                                         :target (file+head
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
-\#+STARTUP: overview
-- [[shell:open \"https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG\" -a Firefox.app][Timesheet]]
+#+STARTUP: overview
+- [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
 -
+- Project code is VOPAD2 for travel.
 /block/
 "))))
 #+end_src
@@ -751,7 +764,7 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 #+begin_src emacs-lisp
 (setq org-roam-capture-templates
     '(("d" "default" plain "%?"
-        :target (file+head "${slug}.org" "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
+        :target (file+head "pages/${slug}.org" "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
         :unnarrowed t)))
 #+end_src
 * Other Modes
