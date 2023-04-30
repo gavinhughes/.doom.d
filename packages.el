@@ -51,3 +51,12 @@
 
 ;;;; Not currently used:
 ;; (package! org-anki)
+
+;; (package! paredit)
+(package! evil-paredit)
+(package! paredit-menu)
+(package! chatgpt
+  :recipe (:host github :repo "joshcho/ChatGPT.el" :files ("dist" "*.el")))
+
+(package! org-ai
+  :recipe (:host github :repo "rksm/org-ai" :files ("*.el" "README.md" "snippets")))

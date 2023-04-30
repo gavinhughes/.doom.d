@@ -8,8 +8,6 @@
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
 - Halp runs programs in the Emacs buffer holding their source, seeing their output inline, interactively. Probably not necessary with org-mode, which has literate programming built in.
    =(load! "~/.doom.d/modules/halp.el")=
-- Use =fd= instead of =find= or =locate=
-   [[https://github.com/sharkdp/fd][fd: A simple, fast and user-friendly alternative to 'find']]
 - If emacs path is not the same is not the same as Mac path, try [[https://github.com/purcell/exec-path-from-shell][this.]]
 
 * Startup and load
@@ -65,12 +63,22 @@ Required first line for =config.el=.
 ;; TODO Why do we need evil for this? Any other value for having evil in minibuffer?
 (setq evil-want-minibuffer t)
 
+;; Don't use locate, only consult-locate.
 (setq consult-locate-args "mdfind -name") ;; Instead of `locate`
 ;; Would be better to have the below, but need to figure out how to do it.
 ;; (setq consult-locate-args (concat "mdfind " args " | grep -v -e /bak/ -e archive"))
 
 ;; Spelling
-(remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
+(setq-default ispell-program-name "aspell")
+(setq-default ispell-extra-args '("--sug-mode=ultra"))
+
+;; suggested by ai
+;; Initially, toggle spell-checking on
+;; (add-hook 'text-mode-hook #'flyspell-mode)
+;; (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+
+;; Commented on [2023-04-30 Sun]
+;; (remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
 (setq
    ispell-personal-dictionary "~/.doom.d/aspell.en.pws"
    ;; ispell-program-name "hunspell"
@@ -178,17 +186,18 @@ Fonts
 * My functions
 ** Search
 #+begin_src elisp
-(setq consult-ripgrep-args "rg --sortr path --null --line-buffered --color=never --max-columns=1000 --path-separator /   --smart-case --no-heading --line-number --multiline --type org .")
+; Note that filenames containing `archive` anywhere in the path are excluded.
+(setq consult-ripgrep-args "rg -g !\*bak -g !\*archive\* --sortr path --null --line-buffered --color=never --max-columns=1000 --path-separator /   --smart-case --no-heading --line-number --multiline --type org .")
 
-(defun gh/consult-ripgrep-tag ()
-  "Keybinding quick access to consult-ripgrep.
+(defun gh/consult-ripgrep-org-roam-tag ()
+  "Keybinding quick access to consult-ripgrep in the org-roam directory.
 Double press search edits to search with escaped tag: \\#tag"
   (interactive)
   (if (minibufferp)
       (progn
         (backward-delete-char 1)
         (insert "\\#"))
-    (consult-ripgrep)))
+    (consult-ripgrep org-roam-directory)))
 #+end_src
 ** Buffers
 #+begin_src emacs-lisp
@@ -236,6 +245,19 @@ Here's the current signature. How would this need to be modified?
 (defun gh/get-org-property-at-point (property)
   (let ((properties (org-entry-properties nil property)))
     (message (cdr (assoc property properties)))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun org-roam-node-insert-immediate (arg &rest args)
+  "Insert roam node without opening it."
+
+  (interactive "P")
+  (let ((args (cons arg args))
+        (org-roam-capture-templates (list (append (car org-roam-capture-templates)
+                                                  '(:immediate-finish t)))))
+    (apply #'org-roam-node-insert args))
+  (evil-insert-state)
+  )
 #+end_src
 ** Agenda
 Simpler way of doing recursive search of org files:
@@ -309,6 +331,7 @@ Chords that are:
      "s-:"       'undefined ; iSpell
      "s-e"       'undefined ; isearch-yank-kill
      "C-SPC"     'undefined ; set-mark-command
+    "C-M-<return>" 'undefined ; org insert subheading. Used by magnet
 
      ; Using undo-fu package mapped for Mac consistency to to s-z and S-s-z.
      "C-/"       'undefined ; undo-fu-only-undo. When would I need this?
@@ -317,12 +340,15 @@ Chords that are:
      "s--"       'undefined ; doom/decrease-font-size (use C-- instead.
                             ; text-scale-increase)
      "s-="       'undefined ; doom/increase-font-size (use C-= instead)
+     "C-x <right>" 'undefined ; next-buffer
+     "C-x <left>" 'undefined ; previous-buffer
 
  :leader ":"     'undefined ; M-x
  :leader "."     'undefined ; counsel-find-file. SPC ff
  :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
  :leader "X"     'undefined
  :leader "b N"   'undefined
+ :leader "b r"   'undefined ; revert-buffer. Risky. Access by M-x only.
  :leader "u"     'undefined ; Universal argument
  )
 #+end_src
@@ -367,9 +393,9 @@ C-M-<space>     Things quick capture
 
   :ni "M-."                'better-jumper-jump-forward
   :ni "M-,"                'better-jumper-jump-backward
-      "s-\\"               'consult-ripgrep
-     ;; And make another function to back out of the #:
-     ;; "M-s-\\"             'consult-ripgrep-without-hash
+
+  ;; Text
+      "M-c"                'capitalize-region ; Overwrites capitalize-word (use ~)
 
   ;; Special characters
   :i "M--" "–" ;; m-dash. Consistent with Mac.
@@ -385,7 +411,10 @@ C-M-<space>     Things quick capture
   "s-p"            'ps-print-buffer-with-confirmation
   "s-;"            'org-roam-node-find
   "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
-  "M-s-\\"          'gh/consult-ripgrep-tag
+
+  ;; Search
+  "s-\\"            'consult-ripgrep
+  "M-s-\\"          'gh/consult-ripgrep-org-roam-tag
 
   ;; Windows
   "s-'"            'evil-window-next
@@ -401,6 +430,9 @@ C-M-<space>     Things quick capture
   "s-2"        '+workspace/switch-to-1
   "s-3"        '+workspace/switch-to-2
   "s-4"        '+workspace/switch-to-3
+
+  ;; Org-ai
+  "C-c a a"    'gh/orgai-file-append
 
   ;; Other
   :ni "s-O"       'evil-open-above
@@ -457,6 +489,9 @@ When dwim-ing on a filesystem link with filetype like `.numbers` in the minibuff
 
   "M-s-SPC"            'org-capture
 
+  :n "z n"             'doom/toggle-narrow-to-buffer ; org-tree-to-indirect-buffer
+                                                     ; The original might be better?
+
   "H-n"                'org-next-visible-heading
   "H-p"                'org-previous-visible-heading
   "H-r"                (cmd! (+org/refile-to-file nil "daily.org"))
@@ -471,7 +506,7 @@ When dwim-ing on a filesystem link with filetype like `.numbers` in the minibuff
 
   "s-k"                'org-insert-link
 
-  "C-M-y"              'org-download-screenshot
+  "C-M-y"              'org-download-screenshot ; paste
   "C-M-S-y"            'org-download-yank
 
   ;; Quickly get done Todo states
@@ -533,11 +568,150 @@ org-roam scope.
 
     ;; `r` org-roam
     :leader "r i"     'org-roam-node-insert
+    :leader "r I"     'org-roam-node-insert-immediate
     :leader "r b"     'org-roam-buffer-toggle
     :leader "r x"     'gh/org-roam-toggle-exclude
 )
 #+end_src
 
+** Other Modes
+*** Which-key
+#+begin_src emacs-lisp
+(map! :map which-key-mode-map
+    "M-x <right>"   'which-key-show-next-page-cycle
+    "C-x <right>"   'which-key-show-next-page-cycle
+    "M-x <left>"   'which-key-show-previous-page-cycle
+    "C-x <left>"   'which-key-show-previous-page-cycle
+
+    ;; No further pages here.
+    ;; :leader "<right>"   'which-key-show-next-page-cycle
+    ;; :leader "<left>"    'which-key-show-previous-page-cycle
+    )
+#+end_src
+
+*** C++
+[[https://medium.com/linux-with-michael/emacs-for-c-development-766c8b5866f][Configuring Emacs For C++ Development]]
+- The above link also recommends using Tabnine for autocompletion. I haven't set this up yet.
+- Set (cc +lsp) in your ~/.config/doom/init.el.  Done??
+- The below executable hasn't been =chmod +x= yet.
+#+begin_src emacs-lisp
+(after! ccls
+  (setq ccls-executable "~/bin/ccls"
+        compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (set-lsp-priority! 'ccls 0))
+
+(setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+;; (define-key c++-mode-map [f5] #'compile)
+#+end_src
+
+Convenient compile in C++.
+#+begin_src emacs-lisp
+(defun gh/compile ()
+  (interactive)
+  (setq compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (compile compile-command))
+
+
+(map! :map cpp-mode-map
+  :leader "c c" 'gh/compile
+  )
+#+end_src
+
+*** Elixir and Phoenix
+#+begin_src emacs-lisp
+(map! :map elixir-mode-map
+ :i "M-s-;" (cmd! (insert "-> "))
+ :i "M-s-:" (cmd! (insert "<- "))
+ :i "s-:"   (cmd! (insert "=> "))
+ :i "M-s-." (cmd! (insert "|> "))
+ )
+#+end_src
+
+*** Haskell
+#+begin_src emacs-lisp
+(defun  gh/load-and-run ()
+  (interactive)
+  (haskell-process-load-or-reload)
+  (evil-window-next 0)
+  ;; (haskell-interactive-mode-history-previous 1)
+  )
+#+end_src
+
+#+begin_src emacs-lisp
+(map! :map haskell-mode-map
+ :i "C-M-;" (cmd! (insert "-> "))
+ :i "C-M-:" (cmd! (insert "<- "))
+ :i "C-M-=" (cmd! (insert "=> "))
+ :i "C-M-+" (cmd! (insert "<= "))
+
+ ; Not being scoped to haskell-mode. Why?
+ ; :leader "m l" 'gh/load-and-run
+ )
+ #+end_src
+
+*** Ledger
+#+begin_src emacs-lisp
+(map! :map ledger-mode-map
+      "C-c C-l" 'ledger-mode-clean-buffer
+      "C-c C-i" 'gh/ledger-insert-date)
+#+end_src
+
+Ledger stores custom reports in =custom.el=, but the file does not persist so losing all reports. This should be set in =custom-set-variables=, but see the note below.  Find a work around.
+#+begin_src elisp :tangle no
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+ '(ledger-reports
+   '(
+     ("bal" "%(binary) -f %(ledger-file) bal")
+     ("reg" "%(binary) -f %(ledger-file) reg")
+     ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
+     ("account" "%(binary) -f %(ledger-file) reg %(account)")
+     ("Annulment - reg" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger reg \"Expense\" and %case=2015-15066")
+     ("Annulment - bal" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger bal \"Expense\" and %case=2015-15066")
+     ("Spec Perf - reg" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger reg \"Expense\" and %case=2018-15313")
+     ("Spec Perf - Bal" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger bal \"Expense\" and %case=2018-15313")
+     ))
+#+end_src
+
+*** Markdown
+#+begin_src emacs-lisp
+(map! :map markdown-mode-map
+    ;; Make m-dash behavior consistent with Mac.
+    "M--" 'undefine
+
+    "M-s-<return>"  'markdown-insert-list-item
+ :i "M--" "–"
+;; Errors on markdown-insert-list-item
+;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
+ )
+#+end_src
+*** Unused
+**** Eww
+#+begin_src emacs-lisp :tangle no
+(after! eww
+  ;; (load-directory! "my/eww-mode")
+  ;; This has global effect.  How to limit to just eww mode?
+  ;; (visual-fill-column-mode t)
+  (map! :map eww-mode-map
+        "I" #'my/eww-toggle-images
+        "M-<return>" 'my-eww-open-in-new-window
+        "M-s-[" 'eww-back-url
+        "M-s-]" 'eww-forward-url)
+        ;; "<s-mouse-1>" 'my-eww-open-in-new-window
+  )
+#+end_src
+**** ESS
+#+begin_src emacs-lisp :tangle no
+(map! :map inferior-ess-mode
+  :n "M-j" "<- "
+  )
+#+end_src
 * Org Mode
 ** Functions
 #+begin_src emacs-lisp
@@ -695,7 +869,10 @@ https://zzamboni.org/post/how-to-insert-screenshots-in-org-documents-on-macos/
 #+end_src
 
 #+begin_src emacs-lisp
-(add-hook 'org-mode-hook #'org-appear-mode)
+
+;; Don't think this required now. [2023-04-30 Sun]
+;; (add-hook 'org-mode-hook #'org-appear-mode)
+
 (after! org
   ;; (load-directory! "my/org-mode")
  (vi-tilde-fringe-mode -1)
@@ -754,10 +931,10 @@ Logseq on mobile current solution for accessing Org Roam on mobile. The followin
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview
+–––
 - [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
--
-- Project code is VOPAD2 for travel.
-/block/
+- code: VOPAD2
+–––
 "))))
 #+end_src
 ** Capture Template
@@ -767,130 +944,36 @@ Logseq on mobile current solution for accessing Org Roam on mobile. The followin
         :target (file+head "pages/${slug}.org" "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
         :unnarrowed t)))
 #+end_src
-* Other Modes
-** C++
-[[https://medium.com/linux-with-michael/emacs-for-c-development-766c8b5866f][Configuring Emacs For C++ Development]]
-- The above link also recommends using Tabnine for autocompletion. I haven't set this up yet.
-- Set (cc +lsp) in your ~/.config/doom/init.el.  Done??
-- The below executable hasn't been =chmod +x= yet.
-#+begin_src emacs-lisp
-(after! ccls
-  (setq ccls-executable "~/bin/ccls"
-        compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
-  (set-lsp-priority! 'ccls 0))
-
-(setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
-;; (define-key c++-mode-map [f5] #'compile)
+* Org-ai mode
+#+begin_src elisp
+(org-ai-global-mode 1) ; Make it work everywhere.
+(add-hook 'org-mode-hook 'org-ai-mode) ; And always on in org.
+; See https://platform.openai.com/docs/models
+(setq org-ai-default-chat-model "gpt-3.5-turbo")
+(setq org-ai-openai-api-token "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")
 #+end_src
 
-Convenient compile in C++.
+The function below is okay, but if I'm using AI in multiple contexts, I would prefer to have each orgai file related only to that context. One way to accomplish this would be to have orgai files named by associated org filename and date. If the buffer is new, then naming by date time would also capture this, but would likely require clean up because these are generally just scratch files.
+
+The other important questions would be, why even save these files? They are useful only for the AI's "memory" (since it doesn't have one). But currently limitation on GPT 3.5 turbo is (I think) 32k tokens.
+
 #+begin_src emacs-lisp
-(defun gh/compile ()
+(defun gh/orgai-file-append ()
+  "Inserts AI code block at the end of ~/orgai/orgai.org"
   (interactive)
-  (setq compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
-  (compile compile-command))
-
-
-(map! :map cpp-mode-map
-  :leader "c c" 'gh/compile
-  )
+  (setq file "~/orgai/orgai.org")
+  (setq cur-window (selected-window))
+  (split-window-right)
+  (other-window 1)
+  (find-file file)
+  (goto-char (point-max))
+  (newline)
+  (insert "#+begin_ai\n[ME]:\n\n#+end_ai")
+  (previous-line)
+  (evil-insert-state)
+  (recenter-top-bottom))
 #+end_src
 
-** Elixir and Phoenix
-#+begin_src emacs-lisp
-(map! :map elixir-mode-map
- :i "M-s-;" (cmd! (insert "-> "))
- :i "M-s-:" (cmd! (insert "<- "))
- :i "s-:"   (cmd! (insert "=> "))
- :i "M-s-." (cmd! (insert "|> "))
- )
-#+end_src
-
-** Haskell
-#+begin_src emacs-lisp
-(defun  gh/load-and-run ()
-  (interactive)
-  (haskell-process-load-or-reload)
-  (evil-window-next 0)
-  ;; (haskell-interactive-mode-history-previous 1)
-  )
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :map haskell-mode-map
- :i "C-M-;" (cmd! (insert "-> "))
- :i "C-M-:" (cmd! (insert "<- "))
- :i "C-M-=" (cmd! (insert "=> "))
- :i "C-M-+" (cmd! (insert "<= "))
-
- ; Not being scoped to haskell-mode. Why?
- ; :leader "m l" 'gh/load-and-run
- )
- #+end_src
-
-** Ledger
-#+begin_src emacs-lisp
-(map! :map ledger-mode-map
-      "C-c C-l" 'ledger-mode-clean-buffer
-      "C-c C-i" 'gh/ledger-insert-date)
-#+end_src
-
-Ledger stores custom reports in =custom.el=, but the file does not persist so losing all reports. This should be set in =custom-set-variables=, but see the note below.  Find a work around.
-#+begin_src elisp :tangle no
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
-#+end_src
-
-#+begin_src emacs-lisp :tangle no
- '(ledger-reports
-   '(
-     ("bal" "%(binary) -f %(ledger-file) bal")
-     ("reg" "%(binary) -f %(ledger-file) reg")
-     ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
-     ("account" "%(binary) -f %(ledger-file) reg %(account)")
-     ("Annulment - reg" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger reg \"Expense\" and %case=2015-15066")
-     ("Annulment - bal" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger bal \"Expense\" and %case=2015-15066")
-     ("Spec Perf - reg" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger reg \"Expense\" and %case=2018-15313")
-     ("Spec Perf - Bal" "ledger [[ledger-mode-flags]] -f /Users/gavinhughes/Library/Mobile\\ Documents/com\\~apple\\~CloudDocs/Dauin\\ Point/Finance/Accounting/ledger/main.ledger bal \"Expense\" and %case=2018-15313")
-     ))
-#+end_src
-
-** Markdown
-#+begin_src emacs-lisp
-(map! :map markdown-mode-map
-    ;; Make m-dash behavior consistent with Mac.
-    "M--" 'undefine
-
-    "M-s-<return>"  'markdown-insert-list-item
- :i "M--" "–"
-;; Errors on markdown-insert-list-item
-;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
- )
-#+end_src
-** Unused
-*** Eww
-#+begin_src emacs-lisp :tangle no
-(after! eww
-  ;; (load-directory! "my/eww-mode")
-  ;; This has global effect.  How to limit to just eww mode?
-  ;; (visual-fill-column-mode t)
-  (map! :map eww-mode-map
-        "I" #'my/eww-toggle-images
-        "M-<return>" 'my-eww-open-in-new-window
-        "M-s-[" 'eww-back-url
-        "M-s-]" 'eww-forward-url)
-        ;; "<s-mouse-1>" 'my-eww-open-in-new-window
-  )
-#+end_src
-*** ESS
-#+begin_src emacs-lisp :tangle no
-(map! :map inferior-ess-mode
-  :n "M-j" "<- "
-  )
-#+end_src
 * Experimental
 Prune this occasionally.
 
@@ -912,6 +995,11 @@ TODO - not working...
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'paredit-mode-hook (lambda () (evil-paredit-mode +1)))
+
+;; [2023-04-30 Sun]
+(add-hook 'org-mode-hook (lambda () (flyspell-mode -1)))
+(add-hook 'org-mode-hook (lambda () (flyspell-lazy-mode -1)))
+
 #+end_src
 
 ** Functions
@@ -935,4 +1023,17 @@ diff.
              template-file-regex
              nil
              (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
+#+end_src
+
+** ChatGPT
+#+begin_src emacs-lisp
+(use-package! chatgpt
+  :defer t
+  :config
+  (unless (boundp 'python-interpreter)
+    (defvaralias 'python-interpreter 'python-shell-interpreter))
+  (setq chatgpt-repo-path (expand-file-name "straight/repos/ChatGPT.el/" doom-local-dir))
+  (set-popup-rule! (regexp-quote "*ChatGPT*")
+    :side 'bottom :size .5 :ttl nil :quit t :modeline nil)
+  :bind ("C-c q" . chatgpt-query))
 #+end_src

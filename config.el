@@ -23,7 +23,7 @@
   doom-scratch-initial-major-mode 'org-mode
   undo-limit 80000000                         ; Raise undo-limit to 80Mb
   evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
-  auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+  auto-save-default t
   inhibit-compacting-font-caches t            ; When there are lots of glyphs, keep them in memory
   truncate-string-ellipsis "…"                ; Use unicode ellipsis
   global-visual-line-mode t                   ; Visual line navigation everywhere.
@@ -40,25 +40,40 @@
   esup-depth 0
   )
 
-;; Finding files
+;; Use evil in minibuffer to support 'gh/consult-ripgrep-tag
+;; to delete backwards and add \#tag.
+;; TODO Why do we need evil for this? Any other value for having evil in minibuffer?
+(setq evil-want-minibuffer t)
+
+;; Don't use locate, only consult-locate.
 (setq consult-locate-args "mdfind -name") ;; Instead of `locate`
 ;; Would be better to have the below, but need to figure out how to do it.
 ;; (setq consult-locate-args (concat "mdfind " args " | grep -v -e /bak/ -e archive"))
 
 ;; Spelling
-(remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
+(setq-default ispell-program-name "aspell")
+(setq-default ispell-extra-args '("--sug-mode=ultra"))
+
+;; suggested by ai
+;; Initially, toggle spell-checking on
+;; (add-hook 'text-mode-hook #'flyspell-mode)
+;; (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+
+;; Commented on [2023-04-30 Sun]
+;; (remove-hook 'text-mode-hook #'spell-fu-mode) ; Focus on writing, not spelling.
 (setq
    ispell-personal-dictionary "~/.doom.d/aspell.en.pws"
    ;; ispell-program-name "hunspell"
    )
 
-(setq projectile-indexing-method 'native)
-(add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
+;; [2023-01-17 Tue] I think I fixed this by adding "*archive" to to gitignore global and using ripgrep for searching.
+;; (setq projectile-indexing-method 'native)
+;; (add-to-list 'projectile-globally-ignored-file-suffixes ".org_archive")
 ;; (add-to-list 'projectile-globally-ignored-directories "*bak")
-  ;; Ignores aren't working.  Why?  [2021-12-28 Tue]
-  ;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
+;; https://emacs.stackexchange.com/questions/16497/how-to-exclude-files-from-projectile
+
+;; ‘nil’ sets major mode to equal previous current buffer.
 (setq-default major-mode 'org-mode)
-  ;; If set to ‘nil’, the major mode is taken from the previously current buffer.
 
 (add-to-list 'default-frame-alist '(fullscreen . maximized)) ; Maximize frame at startup
 
@@ -105,10 +120,10 @@
     '(
             ("DOING" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
             ("ASSIGNED" :foreground "grey40" :weight bold :family "DejaVu Sans Mono")
-            ("TODO" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("TODO" :foreground "#98be65" :weight bold :family "DejaVu Sans Mono")
             ("WIP" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("DONE" :foreground "grey25" :weight bold :family "DejaVu Sans Mono")
-            ("PENDING" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
+            ("PENDING" :foreground "DarkGreen" :weight bold :family "DejaVu Sans Mono")
             ("PAUSED" :foreground "dim grey" :weight bold :family "DejaVu Sans Mono")
             ("[ ]" :foreground "dim grey")
             ("[X]" :foreground "grey25")
@@ -131,6 +146,19 @@
   '(link ((t (:weight normal :underline "grey37" :foreground "pink1"))))
 )
 
+; Note that filenames containing `archive` anywhere in the path are excluded.
+(setq consult-ripgrep-args "rg -g !\*bak -g !\*archive\* --sortr path --null --line-buffered --color=never --max-columns=1000 --path-separator /   --smart-case --no-heading --line-number --multiline --type org .")
+
+(defun gh/consult-ripgrep-org-roam-tag ()
+  "Keybinding quick access to consult-ripgrep in the org-roam directory.
+Double press search edits to search with escaped tag: \\#tag"
+  (interactive)
+  (if (minibufferp)
+      (progn
+        (backward-delete-char 1)
+        (insert "\\#"))
+    (consult-ripgrep org-roam-directory)))
+
 (defun gh/clone-indirect-buffer-vertically ()
   (interactive)
   (clone-indirect-buffer nil 1)
@@ -143,6 +171,35 @@
   (search-forward "* #journal")
   (org-tree-to-indirect-buffer)
   (evil-goto-line)
+  )
+
+(defun gh/org-roam-toggle-exclude ()
+  "Toggle excluding the current node from the Roam db."
+  (interactive)
+  (let ((node (org-roam-node-at-point 'assert)))
+    (if (gh/get-org-property-at-point "ROAM_EXCLUDE")
+        (progn
+            (org-roam-property-remove "ROAM_EXCLUDE" "t")
+            ;; TODO Sync db?
+            (message "Node included"))
+      (progn
+        (org-roam-property-add "ROAM_EXCLUDE" "t")
+        ;; TODO Sync db?
+        (message "Node exluded")))))
+
+(defun gh/get-org-property-at-point (property)
+  (let ((properties (org-entry-properties nil property)))
+    (message (cdr (assoc property properties)))))
+
+(defun org-roam-node-insert-immediate (arg &rest args)
+  "Insert roam node without opening it."
+
+  (interactive "P")
+  (let ((args (cons arg args))
+        (org-roam-capture-templates (list (append (car org-roam-capture-templates)
+                                                  '(:immediate-finish t)))))
+    (apply #'org-roam-node-insert args))
+  (evil-insert-state)
   )
 
 (setq org-agenda-custom-commands
@@ -168,6 +225,7 @@
   (insert (format-time-string "%Y/%m/%d")))
 
 (map!
+     "s-x"       'undefined ; execute-extended-command
      "C-x b"     'undefined ; switch-to-buffer
  :n  "O"         'undefined ; evil-open-above
  :ni "C-d"       'undefined ; evil-scroll-down
@@ -176,6 +234,7 @@
      "s-:"       'undefined ; iSpell
      "s-e"       'undefined ; isearch-yank-kill
      "C-SPC"     'undefined ; set-mark-command
+    "C-M-<return>" 'undefined ; org insert subheading. Used by magnet
 
      ; Using undo-fu package mapped for Mac consistency to to s-z and S-s-z.
      "C-/"       'undefined ; undo-fu-only-undo. When would I need this?
@@ -184,13 +243,16 @@
      "s--"       'undefined ; doom/decrease-font-size (use C-- instead.
                             ; text-scale-increase)
      "s-="       'undefined ; doom/increase-font-size (use C-= instead)
+     "C-x <right>" 'undefined ; next-buffer
+     "C-x <left>" 'undefined ; previous-buffer
 
  :leader ":"     'undefined ; M-x
  :leader "."     'undefined ; counsel-find-file. SPC ff
  :leader "f D"   'undefined ; doom/delete-this-file. SPC f d
  :leader "X"     'undefined
  :leader "b N"   'undefined
- :leader "u"     'undefined ;; Universal argument
+ :leader "b r"   'undefined ; revert-buffer. Risky. Access by M-x only.
+ :leader "u"     'undefined ; Universal argument
  )
 
 (map!
@@ -217,11 +279,14 @@
   :ni "M-."                'better-jumper-jump-forward
   :ni "M-,"                'better-jumper-jump-backward
 
+  ;; Text
+      "M-c"                'capitalize-region ; Overwrites capitalize-word (use ~)
+
   ;; Special characters
   :i "M--" "–" ;; m-dash. Consistent with Mac.
 
   ;; Buffers
-  "s-n"            (cmd! (evil-buffer-new 1 nil))
+  "s-n"            '+default/new-buffer
   "M-s-k"          'kill-current-buffer
   "M-s-K"          'kill-buffer-and-window
   "s-,"            '+vertico/switch-workspace-buffer
@@ -231,6 +296,10 @@
   "s-p"            'ps-print-buffer-with-confirmation
   "s-;"            'org-roam-node-find
   "M-s-s"          (cmd! (save-buffer) (kill-current-buffer))
+
+  ;; Search
+  "s-\\"            'consult-ripgrep
+  "M-s-\\"          'gh/consult-ripgrep-org-roam-tag
 
   ;; Windows
   "s-'"            'evil-window-next
@@ -247,12 +316,15 @@
   "s-3"        '+workspace/switch-to-2
   "s-4"        '+workspace/switch-to-3
 
+  ;; Org-ai
+  "C-c a a"    'gh/orgai-file-append
+
   ;; Other
   :ni "s-O"       'evil-open-above
       "s-<up>"    '+evil/insert-newline-above
       "s-<down>"  '+evil/insert-newline-below
-      ;; "M-<return>" '+evil/insert-newline-below
-      "M-<return>"  '+default/newline-below
+      ;; Took this out because conflict with minibuffer immediate done on selection.
+      ;; "M-<return>"  '+default/newline-below
   ;; was "H-<return>" with the following note:
    ;; todo. write about the reason for this. Has to do with org mode conflict 's-<return>'
   ;; :ni "s-<return>" (cmd! (message "Use <H-return>"))
@@ -266,7 +338,7 @@
   :leader "b n"   'rename-buffer
   :leader "b c"   'gh/clone-indirect-buffer-vertically
   :leader "j d"   'dired-jump
-  :leader "SPC"   'consult-find
+  :leader "j j"   (cmd! (find-file "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam/Journal.org"))
   :leader "f d"   'doom/delete-this-file
   :leader "q f"   'delete-frame
 
@@ -277,27 +349,169 @@
   :leader "m m d"   '+macos/open-in-default-program
   :leader "m m o"   'reveal-in-osx-finder
 
-  :leader "s a"     'consult-ripgrep
-
   ;; `t` Toggle
   :leader "t v"   'visual-fill-column-mode
 )
+
+(map! :map minibuffer-local-map
+  "s-<return>" "C-; !"
+  )
+
+(map! :map org-mode-map
+  :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
+  :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
+  :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
+  :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
+  ;; Insert a heading while currently working a bullet list
+  :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1)
+                                  (+org/insert-item-below 1))
+
+  "M-s-SPC"            'org-capture
+
+  :n "z n"             'doom/toggle-narrow-to-buffer ; org-tree-to-indirect-buffer
+                                                     ; The original might be better?
+
+  "H-n"                'org-next-visible-heading
+  "H-p"                'org-previous-visible-heading
+  "H-r"                (cmd! (+org/refile-to-file nil "daily.org"))
+  "H-R"                '+org/refile-to-file
+  ;; "H-a"                'org-archive-subtree
+  "H-a"                'gh/open-or-pop-to-agenda
+
+  "C-<"                'org-do-promote
+  "C->"                'org-do-demote
+  "C-M-<"              'org-promote-subtree
+  "C-M->"              'org-demote-subtree
+
+  "s-k"                'org-insert-link
+
+  "C-M-y"              'org-download-screenshot ; paste
+  "C-M-S-y"            'org-download-yank
+
+  ;; Quickly get done Todo states
+  ;; This is anti-pattern but efficient
+  "H-l"  "C-c C-t d" ; DOING
+  "H-k"  "C-c C-t o" ; DONE
+  ;; "H-'"
+
+  :niv "s-j"        'org-todo
+
+  :leader "i d"     'gh/org-time-stamp-inactive
+  :leader "i c"     'gh/org-insert-checkbox
+  :leader "m -"     'org-toggle-item
+  :leader "m m S"   'gh/yank-safari-front-url
+  :leader "m m s"   'gh/org-insert-safari-front-link
+
+  ;; :leader "a a"   'gh/set-org-agenda-all-files
+  ;; :leader "a c"   'gh/set-org-agenda-crowley-files
+  )
+
+(map!
+    "H-,"         'org-roam-dailies-goto-today
+    "H-."         (cmd! (find-file (expand-file-name "daily.org"
+                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
+    "H-d"         'org-roam-dailies-goto-date
+    "H-["         'org-roam-dailies-goto-previous-note
+    "H-]"         'org-roam-dailies-goto-next-note
+
+  :leader "SPC"   'org-roam-node-find  ; Also on "s-;"
+)
+
+(map! :map org-roam-mode-map
+    ;; Add :n to override assignment in +workspaces
+        "<f7>"        'org-tags-view
+        "<f9>"        'org-agenda-list
+
+        "s-I"         'org-roam-node-insert
+
+    ;; `r` org-roam
+    :leader "r i"     'org-roam-node-insert
+    :leader "r I"     'org-roam-node-insert-immediate
+    :leader "r b"     'org-roam-buffer-toggle
+    :leader "r x"     'gh/org-roam-toggle-exclude
+)
+
+(map! :map which-key-mode-map
+    "M-x <right>"   'which-key-show-next-page-cycle
+    "C-x <right>"   'which-key-show-next-page-cycle
+    "M-x <left>"   'which-key-show-previous-page-cycle
+    "C-x <left>"   'which-key-show-previous-page-cycle
+
+    ;; No further pages here.
+    ;; :leader "<right>"   'which-key-show-next-page-cycle
+    ;; :leader "<left>"    'which-key-show-previous-page-cycle
+    )
+
+(after! ccls
+  (setq ccls-executable "~/bin/ccls"
+        compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (set-lsp-priority! 'ccls 0))
+
+(setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+;; (define-key c++-mode-map [f5] #'compile)
+
+(defun gh/compile ()
+  (interactive)
+  (setq compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
+  (compile compile-command))
+
+
+(map! :map cpp-mode-map
+  :leader "c c" 'gh/compile
+  )
+
+(map! :map elixir-mode-map
+ :i "M-s-;" (cmd! (insert "-> "))
+ :i "M-s-:" (cmd! (insert "<- "))
+ :i "s-:"   (cmd! (insert "=> "))
+ :i "M-s-." (cmd! (insert "|> "))
+ )
+
+(defun  gh/load-and-run ()
+  (interactive)
+  (haskell-process-load-or-reload)
+  (evil-window-next 0)
+  ;; (haskell-interactive-mode-history-previous 1)
+  )
+
+(map! :map haskell-mode-map
+ :i "C-M-;" (cmd! (insert "-> "))
+ :i "C-M-:" (cmd! (insert "<- "))
+ :i "C-M-=" (cmd! (insert "=> "))
+ :i "C-M-+" (cmd! (insert "<= "))
+
+ ; Not being scoped to haskell-mode. Why?
+ ; :leader "m l" 'gh/load-and-run
+ )
+
+(map! :map ledger-mode-map
+      "C-c C-l" 'ledger-mode-clean-buffer
+      "C-c C-i" 'gh/ledger-insert-date)
+
+(map! :map markdown-mode-map
+    ;; Make m-dash behavior consistent with Mac.
+    "M--" 'undefine
+
+    "M-s-<return>"  'markdown-insert-list-item
+ :i "M--" "–"
+;; Errors on markdown-insert-list-item
+;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
+ )
 
 (defun gh/org-time-stamp-inactive ()
   (interactive)
   (org-insert-time-stamp (current-time) nil 1))
 
- (defun gh/org-insert-hyphen-bullet ()
+(defun gh/org-insert-checkbox ()
+  "Insert a checkbox list item."
   (interactive)
-  (if (or (org-at-item-p) (org-at-heading-p))
-      (progn
-        (end-of-line)
-        (insert "\n- [ ] ")
-        (evil-insert-state))
-    (message "Not on a list item or heading")))
+  (unless (sp-point-in-blank-line)
+    (evil-insert-newline-below))
+  (insert "- [ ] ")
+  (evil-insert-state))
 
 (setq
-  org-directory "~/iCloud/OrgNotes/"
+  org-directory "/Users/gavinhughes/Library/Mobile Documents/iCloud~com~logseq~logseq/Documents/OrgNotes"
   org-archive-location "archive.org::* From %s"
   org-attach-id-dir (concat org-directory "attachments/")
   org-ellipsis " ▼ "
@@ -314,48 +528,6 @@
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 
 (remove-hook 'org-mode-hook #'+literate-enable-recompile-h)
-
-(map! :map org-mode-map
-  :ni "C-<return>"  (cmd! (evil-org-org-insert-heading-respect-content-below))
-  :ni "s-<return>"         (cmd! (+org/insert-item-below 1))
-  :ni "S-s-<return>"     (cmd! (+org/insert-item-above 1))
-  :ni "M-s-<return>"       (cmd! (org-insert-subheading 1) (evil-insert 1))
-  ;; Insert a heading while currently working a bullet list
-  :nie "C-M-s-<return>"     (cmd! (org-previous-visible-heading 1)
-                                  (+org/insert-item-below 1))
-
-  "M-s-SPC"            'org-capture
-
-  "H-n"                'org-next-visible-heading
-  "H-p"                'org-previous-visible-heading
-  "H-r"                (cmd! (+org/refile-to-file nil "daily.org"))
-  "H-R"                '+org/refile-to-file
-  ;; "H-a"                'org-archive-subtree
-  "H-a"                'gh/open-or-pop-to-agenda
-  "C-<"                'org-do-promote
-  "C->"                'org-do-demote
-  ;; "s-."                'org-shiftright
-  ;; "s->"                'org-shiftleft
-  "s-k"                'org-insert-link
-  "C-M-y"              'org-download-screenshot
-  "C-M-S-y"            'org-download-yank
-
-  ;; Quickly get done Todo states
-  ;; This is anti-pattern but efficient
-  "H-l"  "C-c C-t d" ; DOING
-  "H-k"  "C-c C-t o" ; DONE
-  ;; "H-'"
-
-  :niv "s-j"        'org-todo
-
-  :leader "i d"     'gh/org-time-stamp-inactive
-  :leader "m -"     'org-toggle-item
-  :leader "m m S"   'gh/yank-safari-front-url
-  :leader "m m s"   'gh/org-insert-safari-front-link
-
-  ;; :leader "a a"   'gh/set-org-agenda-all-files
-  ;; :leader "a c"   'gh/set-org-agenda-crowley-files
-  )
 
 (add-hook 'org-mode-hook 'org-fragtog-mode) ; toggle preview when point enters fragment
 
@@ -398,7 +570,9 @@
 ;;         (file+head "references/${citekey}.org" "#+title: ${title}\n")
 ;;         :unnarrowed t)))
 
-(add-hook 'org-mode-hook #'org-appear-mode)
+;; Don't think this required now. [2023-04-30 Sun]
+;; (add-hook 'org-mode-hook #'org-appear-mode)
+
 (after! org
   ;; (load-directory! "my/org-mode")
  (vi-tilde-fringe-mode -1)
@@ -426,15 +600,14 @@
         "|"
       ))))
 
-(setq org-roam-v2-ack t
-      org-roam-directory "~/Library/Mobile Documents/com~apple~CloudDocs/OrgNotes/Roam"
-      org-roam-db-autosync-mode t
+(provide 'sqlite)
 
-      org-roam-capture-templates '(("d" "default" plain "%?"
-                                      :target (file+head "${slug}.org"
-                                                         "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
-                                      :unnarrowed t))
-      org-roam-dailies-directory "daily")
+(setq org-roam-v2-ack t)
+(setq org-roam-directory org-directory)
+(setq org-roam-dailies-directory "journals/")
+(org-roam-db-autosync-mode)
+
+;; (after! org-roam (load! "~/.doom.d/modules/org-roam-logseq.el"))
 
 (setq org-roam-dailies-capture-templates '(("d" "default" entry
                                             "* %?"
@@ -442,102 +615,61 @@
 "%<%Y-%m-%d>.org"
 "#+TITLE: %<%A, %-m/%-d/%y>
 #+STARTUP: overview
-:RESOURCES:
-- Record meetings.
-
-[[id:08adbfaa-a334-4408-b0e2-b93a0476e0b4][Up and Out]]:
-[[id:3ee42355-9ee2-4fd7-9a08-2d68bea5575c][Public Speaking]]:
-Dinner invites:
-
-[[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
-[[elisp:(consult-locate \"Assigned Tasks\")][Assigned Tasks]]
-[[id:74c82416-8fbb-4eed-9ae0-fe774507a7e3][Stack]]
-[[elisp:(consult-locate \"Monthly Maritime Solutions Report\")][Monthly Report]]
-[[id:133b80ef-ce99-4b70-b2d4-49e62469b2a2][Crowley]]
-
-[[id:c0bf71fa-f63e-46d5-9ae3-1d92e6a1b15c][Journal]]
-[[elisp:(consult-locate \"Sleep-drink Log\")][Sleep Log]]
-[[elisp:(consult-locate \"Goal Tracker\")][Goals]]
-[[id:9f575fc8-6b38-4e33-920d-20940860d924][Self]]
-:END:
+–––
+- [[https://crowley-cpt.deltekenterprise.com/cpweb/cploginform.htm?system=CROWLEYCONFIG][Timesheet]]
+- code: VOPAD2
+–––
 "))))
 
-(map!
-    "H-,"         'org-roam-dailies-goto-today
-    "H-."         (cmd! (find-file (expand-file-name "daily.org"
-                        (expand-file-name org-roam-dailies-directory org-roam-directory))))
-    "H-d"         'org-roam-dailies-goto-date
-    "H-["         'org-roam-dailies-goto-previous-note
-    "H-]"         'org-roam-dailies-goto-next-note
-)
+(setq org-roam-capture-templates
+    '(("d" "default" plain "%?"
+        :target (file+head "pages/${slug}.org" "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
+        :unnarrowed t)))
 
-(map! :map org-roam-mode-map
-    ;; Add :n to override assignment in +workspaces
-        "<f7>"        'org-tags-view
-        "<f9>"        'org-agenda-list
+; See https://platform.openai.com/docs/models
+(org-ai-global-mode 1)
+(add-hook 'org-mode-hook 'org-ai-mode)
+(setq org-ai-default-chat-model "gpt-3.5-turbo")
+(setq org-ai-openai-api-token "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")
 
-  "s-I"                'org-roam-node-insert
-        ;; `r` org-roam
-    :leader "r r"     'org-roam-node-find
-    :leader "r i"     'org-roam-node-insert
-    :leader "r b"     'org-roam-buffer-toggle
-)
-
-(after! ccls
-  (setq ccls-executable "~/bin/ccls"
-        compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
-  (set-lsp-priority! 'ccls 0))
-
-(setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
-;; (define-key c++-mode-map [f5] #'compile)
-
-(defun gh/compile ()
+(defun gh/orgai-file-append ()
+  "Inserts AI code block at the end of ~/orgai/orgai.org"
   (interactive)
-  (setq compile-command (concat "g++ " "\"" (buffer-file-name) "\""))
-  (compile compile-command))
+  (setq file "~/orgai/orgai.org")
+  (setq cur-window (selected-window))
+  (split-window-right)
+  (other-window 1)
+  (find-file file)
+  (goto-char (point-max))
+  (newline)
+  (insert "#+begin_ai\n[ME]:\n\n#+end_ai")
+  (previous-line)
+  (evil-insert-state)
+  (recenter-top-bottom))
 
-
-(map! :map cpp-mode-map
-  :leader "c c" 'gh/compile
-  )
-
-(map! :map elixir-mode-map
- :i "M-s-;" (cmd! (insert "-> "))
- :i "M-s-:" (cmd! (insert "<- "))
- :i "s-:"   (cmd! (insert "=> "))
- :i "M-s-." (cmd! (insert "|> "))
- )
-
-(defun  gh/load-and-run ()
-  (interactive)
-  (haskell-process-load-or-reload)
-  (evil-window-next 0)
-  ;; (haskell-interactive-mode-history-previous 1)
-  )
-
-(map! :map haskell-mode-map
- :i "C-M-;" (cmd! (insert "-> "))
- :i "C-M-:" (cmd! (insert "<- "))
- :i "C-M-=" (cmd! (insert "=> "))
- :i "C-M-+" (cmd! (insert "<= "))
-
- :leader "m l" 'gh/load-and-run
- )
-
-(map! :map ledger-mode-map
-      "C-c C-l" 'ledger-mode-clean-buffer
-      "C-c C-i" 'gh/ledger-insert-date)
-
-(map! :map markdown-mode-map
-    ;; Make m-dash behavior consistent with Mac.
-    "M--" 'undefine
-
-    "M-s-<return>"  'markdown-insert-list-item
- :i "M--" "–"
-;; Errors on markdown-insert-list-item
-;;  :ni   "s-<return>" (cmd! (evil-open-below 1) (markdown-insert-list-item))
- )
+(openwith-mode 1)
+(setq openwith-associations
+            (list
+             (list (openwith-make-extension-regexp
+                    '("docx" "doc"))
+                   "Microsoft Word"
+                   '(file))
+             ))
 
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'paredit-mode-hook (lambda () (evil-paredit-mode +1)))
+
+;; [2023-04-30 Sun]
+(add-hook 'org-mode-hook (lambda () (flyspell-mode -1)))
+(add-hook 'org-mode-hook (lambda () (flyspell-lazy-mode -1)))
+
+(use-package! chatgpt
+  :defer t
+  :config
+  (unless (boundp 'python-interpreter)
+    (defvaralias 'python-interpreter 'python-shell-interpreter))
+  (setq chatgpt-repo-path (expand-file-name "straight/repos/ChatGPT.el/" doom-local-dir))
+  (set-popup-rule! (regexp-quote "*ChatGPT*")
+    :side 'bottom :size .5 :ttl nil :quit t :modeline nil)
+  :bind ("C-c q" . chatgpt-query))
