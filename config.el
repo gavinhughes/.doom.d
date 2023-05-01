@@ -224,6 +224,25 @@ Double press search edits to search with escaped tag: \\#tag"
   (interactive)
   (insert (format-time-string "%Y/%m/%d")))
 
+(defun dlukes/ediff-doom-config (file)
+  "ediff the current config with the examples in doom-emacs-dir
+
+There are multiple config files, so FILE specifies which one to
+diff.
+"
+  (interactive
+    (list (read-file-name "Config file to diff: " doom-private-dir)))
+  (let* ((stem (file-name-base file))
+          (customized-file (format "%s.el" stem))
+          (template-file-regex (format "^%s.example.el$" stem)))
+    (ediff-files
+      (concat doom-private-dir customized-file)
+      (car (directory-files-recursively
+             doom-emacs-dir
+             template-file-regex
+             nil
+             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
+
 (map!
      "s-x"       'undefined ; execute-extended-command
      "C-x b"     'undefined ; switch-to-buffer
@@ -626,11 +645,11 @@ Double press search edits to search with escaped tag: \\#tag"
         :target (file+head "pages/${slug}.org" "#+TITLE:   ${title}\n#+STARTUP: overview\n–")
         :unnarrowed t)))
 
+(org-ai-global-mode 1) ; Make it work everywhere.
+(add-hook 'org-mode-hook #'org-ai-mode) ; And always on in org.
 ; See https://platform.openai.com/docs/models
-(org-ai-global-mode 1)
-(add-hook 'org-mode-hook 'org-ai-mode)
 (setq org-ai-default-chat-model "gpt-3.5-turbo")
-(setq org-ai-openai-api-token "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")
+(setq org-ai-openai-api-token (getenv "OPENAI-API-TOKEN"))
 
 (defun gh/orgai-file-append ()
   "Inserts AI code block at the end of ~/orgai/orgai.org"
@@ -646,15 +665,6 @@ Double press search edits to search with escaped tag: \\#tag"
   (previous-line)
   (evil-insert-state)
   (recenter-top-bottom))
-
-(openwith-mode 1)
-(setq openwith-associations
-            (list
-             (list (openwith-make-extension-regexp
-                    '("docx" "doc"))
-                   "Microsoft Word"
-                   '(file))
-             ))
 
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'lisp-mode-hook #'enable-paredit-mode)

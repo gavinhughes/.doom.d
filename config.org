@@ -2,8 +2,10 @@
 #+STARTUP: overview
 #+PROPERTY: header-args :results none :tangle yes
 
-* Intro
-- Latest Doom private config file templates are [[https://github.com/doomemacs/doomemacs/tree/594d70292dc134d483fbf7a427001250de07b4d2/templates][here]]. Diff =init.el= to see what's new.
+–––
+- Occasionally [[elisp:dlukes/ediff-doom-config][ediff your init.el with current Doom repo version]]. Last done on 2023-04-30 Sun.
+–––
+
 * Ideas
 - Change image paste directory structure for org image download set so that it works in the same directory structure as logseq? see image green propulsion file [2021-12-13 Mon]
 - Halp runs programs in the Emacs buffer holding their source, seeing their output inline, interactively. Probably not necessary with org-mode, which has literate programming built in.
@@ -11,7 +13,6 @@
 - If emacs path is not the same is not the same as Mac path, try [[https://github.com/purcell/exec-path-from-shell][this.]]
 
 * Startup and load
-
 Required first line for =config.el=.
 #+begin_src emacs-lisp
 ;;; config.el -*- lexical-binding: t; -*-
@@ -313,6 +314,30 @@ https://stackoverflow.com/a/41969519/173162
   (interactive)
   (insert (format-time-string "%Y/%m/%d")))
 #+end_src
+** Others
+Source:
+https://github.com/doomemacs/doomemacs/issues/581#issuecomment-895462086
+#+begin_src emacs-lisp
+(defun dlukes/ediff-doom-config (file)
+  "ediff the current config with the examples in doom-emacs-dir
+
+There are multiple config files, so FILE specifies which one to
+diff.
+"
+  (interactive
+    (list (read-file-name "Config file to diff: " doom-private-dir)))
+  (let* ((stem (file-name-base file))
+          (customized-file (format "%s.el" stem))
+          (template-file-regex (format "^%s.example.el$" stem)))
+    (ediff-files
+      (concat doom-private-dir customized-file)
+      (car (directory-files-recursively
+             doom-emacs-dir
+             template-file-regex
+             nil
+             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
+#+end_src
+
 * Keymaps
 - #idea Global keymaps use =s-=. Mode keymaps use =h-=.
 ** Undefine chords
@@ -947,10 +972,10 @@ Logseq on mobile current solution for accessing Org Roam on mobile. The followin
 * Org-ai mode
 #+begin_src elisp
 (org-ai-global-mode 1) ; Make it work everywhere.
-(add-hook 'org-mode-hook 'org-ai-mode) ; And always on in org.
+(add-hook 'org-mode-hook #'org-ai-mode) ; And always on in org.
 ; See https://platform.openai.com/docs/models
 (setq org-ai-default-chat-model "gpt-3.5-turbo")
-(setq org-ai-openai-api-token "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")
+(setq org-ai-openai-api-token (getenv "OPENAI-API-TOKEN"))
 #+end_src
 
 The function below is okay, but if I'm using AI in multiple contexts, I would prefer to have each orgai file related only to that context. One way to accomplish this would be to have orgai files named by associated org filename and date. If the buffer is new, then naming by date time would also capture this, but would likely require clean up because these are generally just scratch files.
@@ -975,21 +1000,8 @@ The other important questions would be, why even save these files? They are usef
 #+end_src
 
 * Experimental
-Prune this occasionally.
-
 Open with
 https://github.com/garberw/openwith
-TODO - not working...
-#+begin_src emacs-lisp
-(openwith-mode 1)
-(setq openwith-associations
-            (list
-             (list (openwith-make-extension-regexp
-                    '("docx" "doc"))
-                   "Microsoft Word"
-                   '(file))
-             ))
-#+end_src
 
 #+begin_src emacs-lisp
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
@@ -1001,30 +1013,6 @@ TODO - not working...
 (add-hook 'org-mode-hook (lambda () (flyspell-lazy-mode -1)))
 
 #+end_src
-
-** Functions
-https://github.com/hlissner/doom-emacs/issues/581
-#+begin_src emacs-lisp :tangle no
-(defun dlukes/ediff-doom-config (file)
-  "ediff the current config with the examples in doom-emacs-dir
-
-There are multiple config files, so FILE specifies which one to
-diff.
-"
-  (interactive
-    (list (read-file-name "Config file to diff: " doom-private-dir)))
-  (let* ((stem (file-name-base file))
-          (customized-file (format "%s.el" stem))
-          (template-file-regex (format "^%s.example.el$" stem)))
-    (ediff-files
-      (concat doom-private-dir customized-file)
-      (car (directory-files-recursively
-             doom-emacs-dir
-             template-file-regex
-             nil
-             (lambda (d) (not (string-prefix-p "." (file-name-nondirectory d)))))))))
-#+end_src
-
 ** ChatGPT
 #+begin_src emacs-lisp
 (use-package! chatgpt
